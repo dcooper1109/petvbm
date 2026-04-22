@@ -1,6 +1,6 @@
 // app/api/findmember/route.js
 
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     const { lastName, policyId } = await req.json();
 

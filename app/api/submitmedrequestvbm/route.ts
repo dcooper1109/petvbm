@@ -1,6 +1,6 @@
 // app/api/submitmedrequestvbm/route.js
 
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     const payload = await req.json();
 
