@@ -112,13 +112,18 @@ export async function POST(req: Request) {
     });
 
   } catch (err) {
-    console.error("submitmedrequestvbm route error:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    const name = err instanceof Error ? err.name : "UnknownError";
+    const cause =
+      err instanceof Error && "cause" in err
+        ? ((err as { cause?: { message?: string } }).cause?.message ?? null)
+        : null;
 
     return Response.json({
       success: false,
-      message: "Server error: " + err.message,
-      errorName: err.name,
-      errorCause: err.cause?.message || null
+      message: "Server error: " + message,
+      errorName: name,
+      errorCause: cause,
     });
   }
 }
