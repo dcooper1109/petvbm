@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Ocp-Apim-Subscription-Key": process.env.APIM_MED_REQUEST_KEY
+        "Ocp-Apim-Subscription-Key": process.env.APIM_MED_REQUEST_KEY!
       },
       body: JSON.stringify(payload)
     });

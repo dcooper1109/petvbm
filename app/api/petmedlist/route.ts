@@ -1,6 +1,6 @@
 export async function GET() {
   try {
-    const response = await fetch(process.env.MEDS_JSON_URL, {
+    const response = await fetch(process.env.MEDS_JSON_URL!, {
       method: "GET",
       cache: "no-store",
     });
