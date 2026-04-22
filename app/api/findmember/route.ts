@@ -65,10 +65,12 @@ export async function POST(req: Request) {
     }
 
     return Response.json({ found: false, message: "Member not found" });
-  } catch (err: any) {
-    return Response.json({
-      found: false,
-      message: "Server error: " + err.message,
-    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+
+    return Response.json(
+      { found: false, message: "Server error: " + message },
+      { status: 500 }
+    );
   }
 }

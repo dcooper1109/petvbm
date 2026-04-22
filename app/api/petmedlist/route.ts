@@ -33,8 +33,10 @@ export async function GET() {
       { status: 500 }
     );
   } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+
     return Response.json(
-      { meds: [], message: "Server error: " + err.message },
+      { meds: [], message: "Server error: " + message },
       { status: 500 }
     );
   }
