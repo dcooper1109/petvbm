@@ -3,7 +3,10 @@ export async function POST(req: Request) {
     const { lastName, policyId } = await req.json();
 
     if (!lastName || !policyId) {
-      return Response.json({ found: false, message: "Missing parameters" });
+      return Response.json(
+        { found: false, message: "Missing parameters" },
+        { status: 400 }
+      );
     }
 
     const lookupUrl = process.env.APIM_MEMBER_LOOKUP_URL;
@@ -34,7 +37,7 @@ export async function POST(req: Request) {
     try {
       data = JSON.parse(text);
     } catch {
-      return Response.json({ found: false, message: "Invalid JSON", raw: text });
+      return Response.json({ found: false, message: "Invalid JSON" });
     }
 
     if (data?.body && typeof data.body === "object") data = data.body;
@@ -44,27 +47,53 @@ export async function POST(req: Request) {
       } catch {}
     }
 
+    if (!response.ok) {
+      const apiErrorMessages: Record<number, string> = {
+        410: "SubscriptionID and Last Name provided are not Valid",
+        420: "No pets are associated with this subscriber. Please contact support if this is unexpected.",
+        480: "Error retrieving Member Subscription Record. Verify your information and try again.",
+      };
+
+      return Response.json(
+        {
+          found: false,
+          message:
+            apiErrorMessages[response.status] ||
+            data?.message ||
+            data?.results ||
+            `Lookup API failed with status ${response.status}`,
+        },
+        { status: response.status }
+      );
+    }
+
     if (data?.results) {
       return Response.json({ found: false, message: data.results });
+    }
+
+    if (data?.message && !data?.pets && !data?.first) {
+      return Response.json({ found: false, message: data.message });
     }
 
     if (data?.pets && Array.isArray(data.pets)) {
       return Response.json({
         found: true,
         member: data,
-        pets: data.pets,
       });
     }
 
-    if (data?.petName || data?.firstName) {
+    if (data?.petName || data?.first || data?.firstName) {
       return Response.json({
         found: true,
-        member: data,
-        pets: data.petName ? [data] : [],
+        member: {
+          ...data,
+          pets: data?.petName ? [data] : [],
+        },
       });
     }
 
     return Response.json({ found: false, message: "Member not found" });
+
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
 

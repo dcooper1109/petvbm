@@ -9,6 +9,27 @@ type CustomSelectProps = {
   onChange: (value: string) => void;
   className?: string;
   hasError?: boolean;
+  placeholder?: string;
+  keepFullListUntilSubmit?: boolean;
+};
+
+type Pet = {
+  petName: string;
+  petSpecies: string;
+  petSex: string;
+  petWeight?: string;
+  petBreed: string;
+};
+
+type MemberData = {
+  first: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  mobile: string;
+  email: string;
+  pets: Pet[];
 };
 
 function CustomSelect({
@@ -18,14 +39,18 @@ function CustomSelect({
   onChange,
   className = "",
   hasError = false,
+  placeholder = "",
+  keepFullListUntilSubmit = false,
 }: CustomSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value || "");
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setSearch(value || "");
-  }, [value]);
+    if (!keepFullListUntilSubmit) {
+      setSearch(value || "");
+    }
+  }, [value, keepFullListUntilSubmit]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -34,12 +59,20 @@ function CustomSelect({
         !containerRef.current.contains(event.target as Node)
       ) {
         setOpen(false);
+
+        if (!keepFullListUntilSubmit) {
+          setSearch(value || "");
+        }
       }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setOpen(false);
+
+        if (!keepFullListUntilSubmit) {
+          setSearch(value || "");
+        }
       }
     }
 
@@ -50,7 +83,7 @@ function CustomSelect({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, []);
+  }, [value, keepFullListUntilSubmit]);
 
   const filteredOptions = options.filter((option) =>
     option.toLowerCase().includes(search.toLowerCase())
@@ -63,11 +96,21 @@ function CustomSelect({
       <div className="custom-select">
         <input
           type="text"
-          value={search}
-          placeholder="Type to search products"
+          value={keepFullListUntilSubmit && !open ? value : search}
+          placeholder={placeholder}
           className={`custom-select-trigger ${hasError ? "field-error" : ""}`}
-          onFocus={() => setOpen(true)}
-          onClick={() => setOpen(true)}
+          onFocus={() => {
+            setOpen(true);
+            if (keepFullListUntilSubmit) {
+              setSearch("");
+            }
+          }}
+          onClick={() => {
+            setOpen(true);
+            if (keepFullListUntilSubmit) {
+              setSearch("");
+            }
+          }}
           onChange={(e) => {
             setSearch(e.target.value);
             setOpen(true);
@@ -100,7 +143,11 @@ function CustomSelect({
                 );
               })
             ) : (
-              <div className="custom-select-empty">No matching products</div>
+              <div className="custom-select-empty">
+                {label === "Pet Name"
+                  ? "No matching pets"
+                  : "No matching products"}
+              </div>
             )}
           </div>
         )}
@@ -122,6 +169,10 @@ export default function Home() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const [memberLoaded, setMemberLoaded] = useState(false);
+  const [memberData, setMemberData] = useState<MemberData | null>(null);
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [selectedPetIndex, setSelectedPetIndex] = useState(0);
+
   const [loadingLookup, setLoadingLookup] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
 
@@ -139,6 +190,8 @@ export default function Home() {
   const [medicationOptions, setMedicationOptions] = useState<string[]>([]);
   const [loadingMeds, setLoadingMeds] = useState(false);
   const [medsLoadError, setMedsLoadError] = useState("");
+
+  const selectedPet = pets.length > 0 ? pets[selectedPetIndex] : null;
 
   async function loadMedicationOptions() {
     setLoadingMeds(true);
@@ -161,9 +214,9 @@ export default function Home() {
       console.error(error);
       setMedicationOptions([]);
       setMedsLoadError("Unable to load product list");
+    } finally {
+      setLoadingMeds(false);
     }
-
-    setLoadingMeds(false);
   }
 
   useEffect(() => {
@@ -202,29 +255,48 @@ export default function Home() {
 
       if (!data.found) {
         setMemberLoaded(false);
+        setMemberData(null);
+        setPets([]);
+        setSelectedPetIndex(0);
         setStatus(data.message || "Member not found");
         setIsError(true);
-        setLoadingLookup(false);
         return;
       }
 
+      const member = data.member ?? null;
+      const petList = Array.isArray(member?.pets) ? member.pets : [];
+
       setMemberLoaded(true);
+      setMemberData(member);
+      setPets(petList);
+      setSelectedPetIndex(0);
+
       setMedication("");
       setSubmitErrors({ medication: false });
       setSubmitMsg("");
       setSubmitHtml("");
       setHasSubmitted(false);
+
       await loadMedicationOptions();
-      setStatus("Enter medication information and press Submit.");
-      setIsError(false);
+
+      if (petList.length > 0) {
+        setStatus("Select the pet name and medication from the lists below and press Submit.");
+        setIsError(false);
+      } else {
+        setStatus("Member found, but no pets were returned.");
+        setIsError(true);
+      }
     } catch (error) {
       console.error(error);
       setMemberLoaded(false);
+      setMemberData(null);
+      setPets([]);
+      setSelectedPetIndex(0);
       setStatus("Lookup failed");
       setIsError(true);
+    } finally {
+      setLoadingLookup(false);
     }
-
-    setLoadingLookup(false);
   }
 
   async function handleSubmit() {
@@ -252,8 +324,16 @@ export default function Home() {
     setSubmitHtml("");
 
     const payload = {
+      memberFirst: memberData?.first || "",
       memberLast: lastName,
       memberInsID: policyId,
+
+      petName: selectedPet?.petName || "",
+      petSpecies: selectedPet?.petSpecies || "",
+      petSex: selectedPet?.petSex || "",
+      petBreed: selectedPet?.petBreed || "",
+      petWeight: selectedPet?.petWeight || "",
+
       medicationName: medication,
       medicationDose: "10mg",
       medicationFrequency: "Once Daily",
@@ -292,15 +372,16 @@ export default function Home() {
       } else {
         setSubmitHtml("");
         setSubmitMsg(result.message || "Failed");
+        setIsError(true);
       }
     } catch (error) {
       console.error(error);
       setSubmitHtml("");
       setSubmitMsg("Unexpected error submitting form");
       setIsError(true);
+    } finally {
+      setLoadingSubmit(false);
     }
-
-    setLoadingSubmit(false);
   }
 
   return (
@@ -327,7 +408,9 @@ export default function Home() {
                     setLookupErrors((p) => ({ ...p, policyId: false }));
                   }
                 }}
-                className={`input-short ${lookupErrors.policyId ? "field-error" : ""}`}
+                className={`input-short ${
+                  lookupErrors.policyId ? "field-error" : ""
+                }`}
               />
             </div>
 
@@ -342,48 +425,102 @@ export default function Home() {
                     setLookupErrors((p) => ({ ...p, lastName: false }));
                   }
                 }}
-                className={`input-short ${lookupErrors.lastName ? "field-error" : ""}`}
+                className={`input-short ${
+                  lookupErrors.lastName ? "field-error" : ""
+                }`}
               />
             </div>
 
             <div className="button-wrap">
-              <button 
-                 className="gold-button" 
-                 onClick={handleLookup}
-                 disabled={loadingLookup}
+              <button
+                className="gold-button"
+                onClick={handleLookup}
+                disabled={loadingLookup}
               >
-                {loadingLookup ? "Looking Up..." : "Look Up"}
+                {loadingLookup ? "Looking..." : "Look Up"}
               </button>
             </div>
           </div>
 
-          <div className="lookup-lower-row">
+           <div className="lookup-lower-row">
             <div className={isError ? "status-error" : "status-green"}>
               {status}
             </div>
           </div>
-
         </section>
 
         <div className="gold-line section-space" />
 
         {memberLoaded && (
           <section className="product-section">
-            <h2 className="product-title">Product Information</h2>
+            <h2 className="product-title">Submit Information</h2>
+
+            {memberLoaded && pets.length > 0 && (
+              <div className="pet-info-row">
+                <CustomSelect
+                  label="Pet Name"
+                  value={selectedPet?.petName || ""}
+                  options={pets.map((p) => p.petName)}
+                  onChange={(value) => {
+                    const index = pets.findIndex((p) => p.petName === value);
+                    if (index !== -1) {
+                      setSelectedPetIndex(index);
+                      setHasSubmitted(false);
+                    }
+                  }}
+                  className="pet-field"
+                  placeholder=""
+                  hasError={false}
+                  keepFullListUntilSubmit={!hasSubmitted}
+                />
+
+                <div className="field-group pet-field">
+                  <label>Pet Species</label>
+                  <input
+                    type="text"
+                    value={selectedPet?.petSpecies || ""}
+                    readOnly
+                    className="input-short readonly-field"
+                  />
+                </div>
+
+                <div className="field-group pet-field">
+                  <label>Pet Sex</label>
+                  <input
+                    type="text"
+                    value={selectedPet?.petSex || ""}
+                    readOnly
+                    className="input-short readonly-field"
+                  />
+                </div>
+
+                <div className="field-group pet-field">
+                  <label>Pet Breed</label>
+                  <input
+                    type="text"
+                    value={selectedPet?.petBreed || ""}
+                    readOnly
+                    className="input-short readonly-field"
+                  />
+                </div>
+              </div>
+            )}
 
             <CustomSelect
-              label="Product"
+              label="Medication Name"
               value={medication}
               options={medicationOptions}
               onChange={(value) => {
                 setMedication(value);
-                setHasSubmitted(false); 
+                setHasSubmitted(false);
                 if (value) {
                   setSubmitErrors({ medication: false });
                 }
               }}
+              placeholder="Type to search products"
               className="product-group"
               hasError={submitErrors.medication}
+              keepFullListUntilSubmit={!hasSubmitted}
             />
 
             {medsLoadError && (
@@ -392,22 +529,26 @@ export default function Home() {
 
             <div className="submit-row">
               <div className="submit-line" />
-              <button 
-                   className="gold-button submit-button" 
-                   onClick={handleSubmit}
-                   disabled={
-                    loadingSubmit || 
-                    loadingMeds || 
-                    medicationOptions.length === 0 ||
-                    hasSubmitted
-                  }
+              <button
+                className="gold-button submit-button"
+                onClick={handleSubmit}
+                disabled={
+                  loadingSubmit ||
+                  loadingMeds ||
+                  medicationOptions.length === 0 ||
+                  hasSubmitted
+                }
               >
                 {hasSubmitted ? "Submitted" : "Submit"}
               </button>
             </div>
 
             {submitMsg && (
-              <div className={isError ? "submit-message error-text" : "submit-message"}>
+              <div
+                className={
+                  isError ? "submit-message error-text" : "submit-message"
+                }
+              >
                 {submitMsg}
               </div>
             )}
