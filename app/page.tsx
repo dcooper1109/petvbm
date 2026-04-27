@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { track } from "@vercel/analytics";
 
 type CustomSelectProps = {
   label: string;
@@ -366,11 +367,18 @@ export default function Home() {
         setSubmitMsg("");
         setStatus("");
         setHasSubmitted(true);
+        track("Pet Med Submit Success", {
+          medicationName: medication,
+          petSpecies: selectedPet?.petSpecies || "",
+        });
       } else {
         setSubmitHtml("");
         setSubmitMsg(result.message || "Failed");
         setStatus("");
         setIsError(true);
+        track("Pet Med Submit Failed", {
+          reason: result.message || "Failed",
+        });
       }
     } catch (error) {
       console.error(error);
