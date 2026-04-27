@@ -312,6 +312,7 @@ export default function Home() {
     setSubmitErrors(newSubmitErrors);
 
     if (newSubmitErrors.medication) {
+      setStatus("");
       setSubmitHtml("");
       setSubmitMsg("Please select a product from the list");
       setIsError(true);
@@ -319,7 +320,8 @@ export default function Home() {
     }
 
     setLoadingSubmit(true);
-    setSubmitMsg("Submitting request to auction partner...");
+    setStatus("");
+    setSubmitMsg("Submitting request to auction partners...");
     setIsError(false);
     setSubmitHtml("");
 
@@ -335,11 +337,6 @@ export default function Home() {
       petWeight: selectedPet?.petWeight || "",
 
       medicationName: medication,
-      medicationDose: "10mg",
-      medicationFrequency: "Once Daily",
-      medicationMethod: "Oral",
-      medicationQuantity: "30",
-      medicationRefill: 1,
     };
 
     try {
@@ -365,13 +362,14 @@ export default function Home() {
             }
           </div>
         `;
-
         setSubmitHtml(html);
         setSubmitMsg("");
+        setStatus("");
         setHasSubmitted(true);
       } else {
         setSubmitHtml("");
         setSubmitMsg(result.message || "Failed");
+        setStatus("");
         setIsError(true);
       }
     } catch (error) {
@@ -393,7 +391,7 @@ export default function Home() {
 
         <div className="gold-line" />
 
-        <h1 className="page-title">Pet Medication Request Portal</h1>
+        <h1 className="page-title">Pet Medication Discount Request</h1>
 
         <section className="lookup-section">
           <div className="lookup-grid">

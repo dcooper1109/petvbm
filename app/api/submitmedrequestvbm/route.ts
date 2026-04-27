@@ -7,12 +7,7 @@ export async function POST(req: Request) {
     const requiredFields = [
       "memberLast",
       "memberInsID",
-      "medicationName",
-      "medicationDose",
-      "medicationFrequency",
-      "medicationMethod",
-      "medicationQuantity",
-      "medicationRefill"
+      "medicationName"
     ];
 
     for (const f of requiredFields) {

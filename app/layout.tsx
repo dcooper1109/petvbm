@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Pet Med Request",
-  description: "Pet Medication Request Portal",
+  description: "Pet Medication Discount Request",
 };
 
 export default function RootLayout({
