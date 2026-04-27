@@ -315,11 +315,21 @@ body {
 
   .submit-row {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
+    margin-left: 0;
+  }
+
+  .submit-line {
+    width: 100%;
   }
 
   .submit-button {
-    width: 100%;
+    width: 142px;
+    min-width: 142px;
+    height: 38px;
+    padding: 0 24px;
+    font-size: 18px;
+    flex: 0 0 auto;
   }
 }
 
