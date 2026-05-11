@@ -397,6 +397,15 @@ export default function Home() {
           <img src="/exouza-logo.png" className="logo-image" />
         </div>
 
+        <div className="top-links">
+          <a
+            href="mailto:itsupport@exouza.com?subject=PetVBM Support Request&body=Please describe your issue."
+            className="contact-button"
+          >
+            ✉ Contact Us
+          </a>
+        </div>
+
         <div className="gold-line" />
 
         <h1 className="page-title">Pet Medication Discount Request</h1>
@@ -565,7 +574,8 @@ export default function Home() {
                 dangerouslySetInnerHTML={{ __html: submitHtml }}
               />
             )}
-          </section>
+
+         </section>
         )}
       </div>
     </main>
