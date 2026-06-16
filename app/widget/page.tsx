@@ -352,7 +352,11 @@ export default function Home() {
       if (result.success) {
         const html = `
           <div class="success-block">
-            <div><strong>✅ Success!</strong></div>
+            <div>
+              <strong>
+                <span style="color: #c46e3a;">✓</span> Success!
+              </strong>
+            </div>
             <div>Partner: ${result.company || ""}</div>
             <div>Discount: ${result.discountPCT || ""}</div>
             <div>Code: ${result.discountCode || ""}</div>
@@ -366,35 +370,59 @@ export default function Home() {
         setSubmitHtml(html);
         setSubmitMsg("");
         setStatus("");
-        setHasSubmitted(true);
+        setHasSubmitted(false);
         track("Pet Med Submit Success", {
           medicationName: medication,
           petSpecies: selectedPet?.petSpecies || "",
         });
       } else {
+          setSubmitHtml("");
+
+          // Use results returned by Power Automate/APIM first
+          const errorMessage =
+            result.results ||
+            result.message ||
+            result.error ||
+            "Failed";
+
+          setSubmitMsg(errorMessage);
+          setStatus("");
+          setIsError(true);
+
+          track("Pet Med Submit Failed", {
+            reason: errorMessage,
+          });
+        }
+      } catch (error: any) {
+        console.error(error);
+
         setSubmitHtml("");
-        setSubmitMsg(result.message || "Failed");
-        setStatus("");
+
+        setSubmitMsg(
+          error?.message ||
+          "Unexpected error submitting form"
+        );
+
         setIsError(true);
-        track("Pet Med Submit Failed", {
-          reason: result.message || "Failed",
-        });
+      } finally {
+        setLoadingSubmit(false);
       }
-    } catch (error) {
-      console.error(error);
-      setSubmitHtml("");
-      setSubmitMsg("Unexpected error submitting form");
-      setIsError(true);
-    } finally {
-      setLoadingSubmit(false);
-    }
   }
 
   return (
     <main className="pet-page">
       <div className="pet-container">
         <div className="logo-wrap">
-          <img src="/exouza-logo.png" className="logo-image" />
+          <img src="/petvantagerx logo on white.png" className="logo-image" />
+        </div>
+
+        <div className="top-links">
+          <a
+            href="mailto:itsupport@exouza.com?subject=PetVBM Support Request&body=Please describe your issue."
+            className="contact-button"
+          >
+            ✉ Contact Us
+          </a>
         </div>
 
         <div className="gold-line" />
@@ -541,8 +569,7 @@ export default function Home() {
                 disabled={
                   loadingSubmit ||
                   loadingMeds ||
-                  medicationOptions.length === 0 ||
-                  hasSubmitted
+                  medicationOptions.length === 0
                 }
               >
                 {hasSubmitted ? "Submitted" : "Submit"}
@@ -565,7 +592,8 @@ export default function Home() {
                 dangerouslySetInnerHTML={{ __html: submitHtml }}
               />
             )}
-          </section>
+
+         </section>
         )}
       </div>
     </main>
