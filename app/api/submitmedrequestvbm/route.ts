@@ -12,10 +12,13 @@ export async function POST(req: Request) {
 
     for (const f of requiredFields) {
       if (!payload[f]) {
-        return Response.json({
-          success: false,
-          message: `Missing required field: ${f}`
-        });
+        return Response.json(
+          {
+            success: false,
+            message: `Missing required field: ${f}`,
+          },
+          { status: 400 }
+        );
       }
     }
 
@@ -25,10 +28,13 @@ export async function POST(req: Request) {
     console.log("submitmedrequestvbm payload =", payload);
 
     if (!targetUrl) {
-      return Response.json({
-        success: false,
-        message: "Missing AUCTION_PARTNER_FLOW_URL in .env.local"
-      });
+      return Response.json(
+        {
+          success: false,
+          message: "Missing AUCTION_PARTNER_FLOW_URL in .env.local"
+        },
+        { status: 500 }
+      );
     }
 
     const response = await fetch(targetUrl, {
@@ -46,11 +52,27 @@ export async function POST(req: Request) {
     console.log("Remote raw response =", text);
 
     if (!response.ok) {
-      return Response.json({
-        success: false,
-        message: `Remote API error: ${response.status} ${response.statusText}`,
-        raw: text
-      });
+      let errorData: any = {};
+
+      try {
+        errorData = text ? JSON.parse(text) : {};
+      } catch {
+        errorData = { results: text };
+      }
+
+      return Response.json(
+        {
+          success: false,
+          results:
+            errorData?.results ||
+            errorData?.message ||
+            errorData?.error?.message ||
+            `Remote API error: ${response.status} ${response.statusText}`,
+          statusCode: response.status,
+          raw: errorData,
+        },
+        { status: response.status }
+      );
     }
 
     let data;
@@ -114,11 +136,14 @@ export async function POST(req: Request) {
         ? ((err as { cause?: { message?: string } }).cause?.message ?? null)
         : null;
 
-    return Response.json({
-      success: false,
-      message: "Server error: " + message,
-      errorName: name,
-      errorCause: cause,
-    });
+    return Response.json(
+      {
+        success: false,
+        message: "Server error: " + message,
+        errorName: name,
+        errorCause: cause,
+      },
+      { status: 500 }
+    );
   }
 }
