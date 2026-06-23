@@ -423,6 +423,10 @@ export default function Home() {
           >
             ✉ Contact Us
           </a>
+
+          <a href="/auth/logout" style={logoutLinkStyle}>
+            Log Out
+          </a>
         </div>
 
         <div className="gold-line" />

@@ -159,7 +159,6 @@ function CustomSelect({
 
 export default function Home() {
   const [lastName, setLastName] = useState("");
-  const [policyId, setPolicyId] = useState("");
   const [medication, setMedication] = useState("");
 
   const [status, setStatus] = useState(
@@ -194,6 +193,15 @@ export default function Home() {
 
   const selectedPet = pets.length > 0 ? pets[selectedPetIndex] : null;
 
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [accessAllowed, setAccessAllowed] = useState(false);
+  const [accessMessage, setAccessMessage] = useState("");
+
+  const [, setFirstName] = useState("");
+  const [, setMobilePhone] = useState("");
+  const [petSubID, setPetSubID] = useState("");
+
+
   async function loadMedicationOptions() {
     setLoadingMeds(true);
     setMedsLoadError("");
@@ -221,22 +229,76 @@ export default function Home() {
   }
 
   useEffect(() => {
+    async function checkAccess() {
+      try {
+        const res = await fetch("/api/oauthlogin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const data = await res.json();
+
+        const loginBody =
+          typeof data.body === "string"
+            ? JSON.parse(data.body)
+            : data.body || data;
+
+      if (
+        res.ok &&
+        loginBody?.petvantagerxPortalAccess === true
+      ) {
+        const oauthLastName = loginBody.lastName || "";
+        const oauthPetSubID = loginBody.petSubID || "";
+
+        setFirstName(loginBody.firstName || "");
+        setLastName(oauthLastName);
+        setMobilePhone(loginBody.mobilePhone || "");
+        setPetSubID(oauthPetSubID);
+
+        setAccessAllowed(true);
+        setAccessMessage("");
+
+        await handleLookup(oauthLastName, oauthPetSubID);
+        
+      } else {
+        setAccessAllowed(false);
+        setAccessMessage(
+          loginBody?.results ||
+          data?.message ||
+          "You are not authorized to access PetVantageRx.com."
+        );
+      }
+      } catch (err) {
+        setAccessAllowed(false);
+        setAccessMessage("Unable to verify PetVantageRx.com access.");
+      } finally {
+        setCheckingAccess(false);
+      }
+    }
+
+    checkAccess();
+  }, []);
+
+  useEffect(() => {
     loadMedicationOptions();
   }, []);
 
-  async function handleLookup() {
+  async function handleLookup(
+    lookupLastName = lastName,
+    lookupPetSubID = petSubID
+  ) {
     setSubmitMsg("");
     setSubmitHtml("");
 
     const newLookupErrors = {
-      policyId: !policyId,
-      lastName: !lastName,
+      policyId: !lookupPetSubID,
+      lastName: !lookupLastName,
     };
 
     setLookupErrors(newLookupErrors);
 
-    if (newLookupErrors.policyId || newLookupErrors.lastName) {
-      setStatus("Please enter Subscription ID and Last Name");
+    if (!lookupPetSubID || !lookupLastName) {
+      setStatus("Unable to retrieve Subscription ID or Last Name from login.");
       setIsError(true);
       return;
     }
@@ -249,7 +311,10 @@ export default function Home() {
       const res = await fetch("/api/findmember", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lastName, policyId }),
+        body: JSON.stringify({
+          lastName: lookupLastName,
+          policyId: lookupPetSubID,
+        }),
       });
 
       const data = await res.json();
@@ -329,7 +394,7 @@ export default function Home() {
     const payload = {
       memberFirst: memberData?.first || "",
       memberLast: lastName,
-      memberInsID: policyId,
+      memberInsID: petSubID,
 
       petName: selectedPet?.petName || "",
       petSpecies: selectedPet?.petSpecies || "",
@@ -409,6 +474,24 @@ export default function Home() {
       }
   }
 
+  if (checkingAccess) {
+    return <main className="pet-page">Checking access...</main>;
+  }
+
+  if (!accessAllowed) {
+    return (
+      <main className="pet-page">
+        <div className="pet-container">
+          <h1 className="page-title">Access Denied</h1>
+          <p>{accessMessage}</p>
+          <a href="/auth/logout" className="contact-button">
+            Log Out
+          </a>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="pet-page">
       <div className="pet-container">
@@ -417,8 +500,12 @@ export default function Home() {
         </div>
 
         <div className="top-links">
+          <a href="/auth/logout" className="contact-button">
+            🔓 Log Out
+          </a>
+          
           <a
-            href="mailto:itsupport@exouza.com?subject=PetVBM Support Request&body=Please describe your issue."
+            href="mailto:itsupport@exouza.com?subject=PetVantageRx.com Support Request&body=Please describe your issue."
             className="contact-button"
           >
             ✉ Contact Us
@@ -435,16 +522,9 @@ export default function Home() {
               <label>Subscription ID</label>
               <input
                 type="text"
-                value={policyId}
-                onChange={(e) => {
-                  setPolicyId(e.target.value);
-                  if (e.target.value) {
-                    setLookupErrors((p) => ({ ...p, policyId: false }));
-                  }
-                }}
-                className={`input-short ${
-                  lookupErrors.policyId ? "field-error" : ""
-                }`}
+                value={petSubID}
+                readOnly
+                className="input-short"
               />
             </div>
 
@@ -453,12 +533,7 @@ export default function Home() {
               <input
                 type="text"
                 value={lastName}
-                onChange={(e) => {
-                  setLastName(e.target.value);
-                  if (e.target.value) {
-                    setLookupErrors((p) => ({ ...p, lastName: false }));
-                  }
-                }}
+                readOnly
                 className={`input-short ${
                   lookupErrors.lastName ? "field-error" : ""
                 }`}
@@ -468,7 +543,7 @@ export default function Home() {
             <div className="button-wrap">
               <button
                 className="gold-button"
-                onClick={handleLookup}
+                onClick={() => handleLookup()}
                 disabled={loadingLookup}
               >
                 {loadingLookup ? "Looking..." : "Look Up"}
@@ -599,3 +674,4 @@ export default function Home() {
     </main>
   );
 }
+
