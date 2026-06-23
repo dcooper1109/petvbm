@@ -516,47 +516,7 @@ export default function Home() {
 
         <h1 className="page-title">Pet Medication Discount Request</h1>
 
-        <section className="lookup-section">
-          <div className="lookup-grid">
-            <div className="field-group">
-              <label>Subscription ID</label>
-              <input
-                type="text"
-                value={petSubID}
-                readOnly
-                className="input-short"
-              />
-            </div>
 
-            <div className="field-group">
-              <label>Last Name</label>
-              <input
-                type="text"
-                value={lastName}
-                readOnly
-                className={`input-short ${
-                  lookupErrors.lastName ? "field-error" : ""
-                }`}
-              />
-            </div>
-
-            <div className="button-wrap">
-              <button
-                className="gold-button"
-                onClick={() => handleLookup()}
-                disabled={loadingLookup}
-              >
-                {loadingLookup ? "Looking..." : "Look Up"}
-              </button>
-            </div>
-          </div>
-
-           <div className="lookup-lower-row">
-            <div className={isError ? "status-error" : "status-green"}>
-              {status}
-            </div>
-          </div>
-        </section>
 
         <div className="gold-line section-space" />
 

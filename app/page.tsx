@@ -30,6 +30,8 @@ type MemberData = {
   zip: string;
   mobile: string;
   email: string;
+  subscriptionType?: string;
+  subscriptionStatus?: string;
   pets: Pet[];
 };
 
@@ -173,6 +175,11 @@ export default function Home() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetIndex, setSelectedPetIndex] = useState(0);
 
+  const [subscriptionType, setSubscriptionType] = useState("");
+  const [subscriptionStatus, setSubscriptionStatus] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberMobilePhone, setMemberMobilePhone] = useState("");
+
   const [loadingLookup, setLoadingLookup] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
 
@@ -197,8 +204,8 @@ export default function Home() {
   const [accessAllowed, setAccessAllowed] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
 
-  const [, setFirstName] = useState("");
-  const [, setMobilePhone] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [mobilePhone, setMobilePhone] = useState("");
   const [petSubID, setPetSubID] = useState("");
 
 
@@ -336,6 +343,12 @@ export default function Home() {
       setMemberData(member);
       setPets(petList);
       setSelectedPetIndex(0);
+      setFirstName(member?.first || "");
+      setLastName(lookupLastName || "");
+      setMemberEmail(member?.email || "");
+      setMemberMobilePhone(member?.mobile || "");
+      setSubscriptionType(member?.subscriptionType || "");
+      setSubscriptionStatus(member?.status || "");
 
       setMedication("");
       setSubmitErrors({ medication: false });
@@ -505,7 +518,7 @@ export default function Home() {
           </a>
           
           <a
-            href="mailto:itsupport@exouza.com?subject=PetVantageRx.com Support Request&body=Please describe your issue."
+            href="mailto:d2csupport@petvantagerx.com?subject=PetVantageRx.com Support Request&body=Please describe your issue."
             className="contact-button"
           >
             ✉ Contact Us
@@ -514,46 +527,52 @@ export default function Home() {
 
         <div className="gold-line" />
 
-        <h1 className="page-title">Pet Medication Discount Request</h1>
+        <section className="product-section">
+          <h2 className="product-title">Subscription Information</h2>
 
-        <section className="lookup-section">
-          <div className="lookup-grid">
-            <div className="field-group">
+          <div className="pet-info-row">
+            <div className="field-group pet-field">
               <label>Subscription ID</label>
-              <input
-                type="text"
-                value={petSubID}
-                readOnly
-                className="input-short"
-              />
+              <input value={petSubID} readOnly className="input-short readonly-field" />
             </div>
 
-            <div className="field-group">
-              <label>Last Name</label>
-              <input
-                type="text"
-                value={lastName}
-                readOnly
-                className={`input-short ${
-                  lookupErrors.lastName ? "field-error" : ""
-                }`}
-              />
+            <div className="field-group pet-field">
+              <label>Subscription Type</label>
+              <input value={subscriptionType} readOnly className="input-short readonly-field" />
             </div>
 
-            <div className="button-wrap">
-              <button
-                className="gold-button"
-                onClick={() => handleLookup()}
-                disabled={loadingLookup}
-              >
-                {loadingLookup ? "Looking..." : "Look Up"}
-              </button>
+            <div className="field-group pet-field">
+              <label>Subscription Status</label>
+              <input value={subscriptionStatus} readOnly className="input-short readonly-field" />
             </div>
           </div>
 
-           <div className="lookup-lower-row">
-            <div className={isError ? "status-error" : "status-green"}>
-              {status}
+          <div className="pet-info-row member-row">
+            <div className="field-group member-name-field">
+              <label>Member Name</label>
+              <input
+                value={`${firstName} ${lastName}`}
+                readOnly
+                className="readonly-field"
+              />
+            </div>
+
+            <div className="field-group member-email-field">
+              <label>Member Email</label>
+              <input
+                value={memberEmail}
+                readOnly
+                className="readonly-field"
+              />
+            </div>
+
+            <div className="field-group member-phone-field">
+              <label>Member Mobile Phone</label>
+              <input
+                value={memberMobilePhone}
+                readOnly
+                className="readonly-field"
+              />
             </div>
           </div>
         </section>
@@ -562,7 +581,7 @@ export default function Home() {
 
         {memberLoaded && (
           <section className="product-section">
-            <h2 className="product-title">Submit Information</h2>
+            <h2 className="product-title">Select Pet, Medication, and click Submit</h2>
 
             {memberLoaded && pets.length > 0 && (
               <div className="pet-info-row">

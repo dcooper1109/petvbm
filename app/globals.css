@@ -472,3 +472,21 @@ body {
   color: #fff;
   transform: translateY(-1px);
 }
+
+.member-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.member-name-field {
+  flex: 1.2;
+}
+
+.member-email-field {
+  flex: 2.5;
+}
+
+.member-phone-field {
+  flex: 1.5;
+}
