@@ -768,6 +768,7 @@ export default function Home() {
                   <input
                     type="checkbox"
                     checked={cancelServiceChecked}
+                    disabled={removePetChecked || addPetChecked}
                     onChange={(e) => {
                       setManageMessage("");
                       setCancelServiceChecked(e.target.checked);
@@ -785,7 +786,7 @@ export default function Home() {
                   <input
                     type="checkbox"
                     checked={removePetChecked}
-                    disabled={cancelServiceChecked}
+                    disabled={cancelServiceChecked || addPetChecked}
                     onChange={(e) => {
                       setManageMessage("");
 
@@ -798,7 +799,10 @@ export default function Home() {
                       }
 
                       setRemovePetChecked(e.target.checked);
-                      setAddPetChecked(false);
+                        if (e.target.checked) {
+                          setCancelServiceChecked(false);
+                          setAddPetChecked(false);
+                        }
                     }}
                   />
                   Remove Pet
@@ -808,12 +812,15 @@ export default function Home() {
                   <input
                     type="checkbox"
                     checked={addPetChecked}
-                    disabled={cancelServiceChecked}
+                    disabled={cancelServiceChecked || removePetChecked}
                     onChange={(e) => {
                       setManageMessage("");
                       setAddPetChecked(e.target.checked);
-                      setRemovePetChecked(false);
-                      setPetsToRemove([]);
+                      if (e.target.checked) {
+                        setCancelServiceChecked(false);
+                        setRemovePetChecked(false);
+                        setPetsToRemove([]);
+                      }
                     }}
                   />
                   Add Pet
