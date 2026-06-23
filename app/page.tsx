@@ -180,6 +180,13 @@ export default function Home() {
   const [memberEmail, setMemberEmail] = useState("");
   const [memberMobilePhone, setMemberMobilePhone] = useState("");
 
+  const [manageOpen, setManageOpen] = useState(false);
+  const [manageFirstName, setManageFirstName] = useState("");
+  const [manageLastName, setManageLastName] = useState("");
+  const [manageMobilePhone, setManageMobilePhone] = useState("");
+  const [manageEmail, setManageEmail] = useState("");
+  const [manageMessage, setManageMessage] = useState("");
+
   const [loadingLookup, setLoadingLookup] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
 
@@ -203,6 +210,16 @@ export default function Home() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [accessAllowed, setAccessAllowed] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
+
+  const [cancelServiceChecked, setCancelServiceChecked] = useState(false);
+  const [removePetChecked, setRemovePetChecked] = useState(false);
+  const [addPetChecked, setAddPetChecked] = useState(false);
+  const [petsToRemove, setPetsToRemove] = useState<string[]>([]);
+
+  const [newPetName, setNewPetName] = useState("");
+  const [newPetSpecies, setNewPetSpecies] = useState("");
+  const [newPetBreed, setNewPetBreed] = useState("");
+  const [newPetSex, setNewPetSex] = useState("");
 
   const [firstName, setFirstName] = useState("");
   const [mobilePhone, setMobilePhone] = useState("");
@@ -333,6 +350,7 @@ export default function Home() {
         setSelectedPetIndex(0);
         setStatus(data.message || "Member not found");
         setIsError(true);
+
         return;
       }
 
@@ -513,6 +531,22 @@ export default function Home() {
         </div>
 
         <div className="top-links">
+
+          <button
+            type="button"
+            className="contact-button"
+            onClick={() => {
+              setManageFirstName(firstName || "");
+              setManageLastName(lastName || "");
+              setManageMobilePhone(memberMobilePhone || "");
+              setManageEmail(memberEmail || "");
+              setManageMessage("");
+              setManageOpen(true);
+            }}
+          >
+            ⚙ Manage Subscr.
+          </button>
+
           <a href="/auth/logout" className="contact-button">
             🔓 Log Out
           </a>
@@ -689,7 +723,230 @@ export default function Home() {
 
          </section>
         )}
+
+        {manageOpen && (
+          <div className="modal-overlay">
+            <div className="manage-modal">
+              <h2 className="product-title">Manage Subscription</h2>
+
+              <div className="manage-grid">
+                <div className="field-group">
+                  <label>First Name</label>
+                  <input
+                    value={manageFirstName}
+                    onChange={(e) => setManageFirstName(e.target.value)}
+                  />
+                </div>
+
+                <div className="field-group">
+                  <label>Last Name</label>
+                  <input
+                    value={manageLastName}
+                    onChange={(e) => setManageLastName(e.target.value)}
+                  />
+                </div>
+
+                <div className="field-group">
+                  <label>Mobile Phone</label>
+                  <input
+                    value={manageMobilePhone}
+                    onChange={(e) => setManageMobilePhone(e.target.value)}
+                  />
+                </div>
+
+                <div className="field-group">
+                  <label>Email</label>
+                  <input
+                    value={manageEmail}
+                    onChange={(e) => setManageEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="manage-options">
+                <label className="manage-option">
+                  <input
+                    type="checkbox"
+                    checked={cancelServiceChecked}
+                    onChange={(e) => {
+                      setManageMessage("");
+                      setCancelServiceChecked(e.target.checked);
+                      if (e.target.checked) {
+                        setRemovePetChecked(false);
+                        setAddPetChecked(false);
+                        setPetsToRemove([]);
+                      }
+                    }}
+                  />
+                  Cancel Service
+                </label>
+
+                <label className="manage-option">
+                  <input
+                    type="checkbox"
+                    checked={removePetChecked}
+                    disabled={cancelServiceChecked}
+                    onChange={(e) => {
+                      setManageMessage("");
+
+                      if (pets.length <= 1) {
+                        setRemovePetChecked(false);
+                        setAddPetChecked(false);
+                        setPetsToRemove([]);
+                        setManageMessage("You cannot remove a pet when there is only one pet.");
+                        return;
+                      }
+
+                      setRemovePetChecked(e.target.checked);
+                      setAddPetChecked(false);
+                    }}
+                  />
+                  Remove Pet
+                </label>
+
+                <label className="manage-option">
+                  <input
+                    type="checkbox"
+                    checked={addPetChecked}
+                    disabled={cancelServiceChecked}
+                    onChange={(e) => {
+                      setManageMessage("");
+                      setAddPetChecked(e.target.checked);
+                      setRemovePetChecked(false);
+                      setPetsToRemove([]);
+                    }}
+                  />
+                  Add Pet
+                </label>
+              </div>
+
+              {removePetChecked && (
+                <div className="manage-subsection">
+                  <h3>Remove Pet</h3>
+
+                  <div className="remove-pet-row">
+                    {pets.map((pet) => (
+                      <label key={pet.petName} className="pet-checkbox-row">
+                        <input
+                          type="checkbox"
+                          checked={petsToRemove.includes(pet.petName)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setPetsToRemove((prev) => [...prev, pet.petName]);
+                            } else {
+                              setPetsToRemove((prev) =>
+                                prev.filter((name) => name !== pet.petName)
+                              );
+                            }
+                          }}
+                        />
+                        <span>{pet.petName}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {addPetChecked && (
+                <div className="manage-subsection">
+                  <h3>Add Pet</h3>
+
+                  <div className="manage-grid">
+                    <div className="field-group">
+                      <label>Pet Name *</label>
+                      <input
+                        value={newPetName}
+                        onChange={(e) => {
+                          setManageMessage("");
+                          setNewPetName(e.target.value);
+                        }}
+                      />
+                    </div>
+
+                    <div className="field-group">
+                      <label>Pet Species *</label>
+                      <input
+                        value={newPetSpecies}
+                        onChange={(e) => {
+                          setManageMessage("");
+                          setNewPetSpecies(e.target.value);
+                        }}
+                      />
+                    </div>
+
+                    <div className="field-group">
+                      <label>Pet Breed</label>
+                      <input
+                        value={newPetBreed}
+                        onChange={(e) => setNewPetBreed(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="field-group">
+                      <label>Pet Sex *</label>
+                        <select
+                          value={newPetSex}
+                          onChange={(e) => setNewPetSex(e.target.value)}
+                          className="input-short"
+                        >
+                        <option value="">Select Pet Sex</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="gold-button"
+                    style={{ marginTop: "20px" }}
+                    onClick={() => {
+                      if (!newPetName.trim() || !newPetSpecies.trim() || !newPetSex.trim()) {
+                        setManageMessage("Pet Name, Pet Species, and Pet Sex are required.");
+                        return;
+                      }
+
+                      setManageMessage("New pet saved locally. API call will be added later.");
+                    }}
+                  >
+                    Submit - Add Pet
+                  </button>
+                </div>
+              )}
+
+              {manageMessage && (
+                <div className="submit-message">{manageMessage}</div>
+              )}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="gold-button"
+                  onClick={() => setManageOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className="gold-button"
+                  onClick={() => {
+                    setManageMessage("Saved locally. Refreshing page...");
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 800);
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
+
+
     </main>
   );
 }
