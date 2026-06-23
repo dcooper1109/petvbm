@@ -675,3 +675,15 @@ export default function Home() {
   );
 }
 
+const navy = "#1B2A41";
+
+const logoutLinkStyle: React.CSSProperties = {
+  padding: "8px 14px",
+  borderRadius: 999,
+  border: "1px solid #d9e2df",
+  backgroundColor: "#ffffff",
+  color: navy,
+  textDecoration: "none",
+  fontSize: 13,
+  fontWeight: 700,
+}
