@@ -857,7 +857,7 @@ export default function Home() {
 
               {removePetChecked && (
                 <div className="manage-subsection">
-                  <h3>Remove Pet</h3>
+                  <h3>Remove Pet (select one)</h3>
 
                   <div className="remove-pet-row">
                     {pets.map((pet) => (
