@@ -159,6 +159,23 @@ function CustomSelect({
   );
 }
 
+function getApiMessage(value: any): string {
+  if (!value) return "";
+
+  if (typeof value === "string") return value;
+
+  if (typeof value === "object") {
+    return (
+      value.message ||
+      value.error ||
+      value.results ||
+      JSON.stringify(value)
+    );
+  }
+
+  return String(value);
+}
+
 export default function Home() {
   const [lastName, setLastName] = useState("");
   const [medication, setMedication] = useState("");
@@ -540,6 +557,17 @@ export default function Home() {
               setManageLastName(lastName || "");
               setManageMobilePhone(memberMobilePhone || "");
               setManageEmail(memberEmail || "");
+
+              setCancelServiceChecked(false);
+              setRemovePetChecked(false);
+              setAddPetChecked(false);
+              setPetsToRemove([]);
+
+              setNewPetName("");
+              setNewPetSpecies("");
+              setNewPetBreed("");
+              setNewPetSex("");
+
               setManageMessage("");
               setManageOpen(true);
             }}
@@ -902,22 +930,6 @@ export default function Home() {
                       </select>
                     </div>
                   </div>
-
-                  <button
-                    type="button"
-                    className="gold-button"
-                    style={{ marginTop: "20px" }}
-                    onClick={() => {
-                      if (!newPetName.trim() || !newPetSpecies.trim() || !newPetSex.trim()) {
-                        setManageMessage("Pet Name, Pet Species, and Pet Sex are required.");
-                        return;
-                      }
-
-                      setManageMessage("New pet saved locally. API call will be added later.");
-                    }}
-                  >
-                    Submit - Add Pet
-                  </button>
                 </div>
               )}
 
@@ -928,23 +940,247 @@ export default function Home() {
               <div className="modal-actions">
                 <button
                   type="button"
-                  className="gold-button"
+                  className="modal-button close-button"
                   onClick={() => setManageOpen(false)}
                 >
-                  Cancel
+                  Close
                 </button>
 
                 <button
                   type="button"
                   className="gold-button"
-                  onClick={() => {
-                    setManageMessage("Saved locally. Refreshing page...");
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 800);
+                  onClick={async () => {
+                    setManageMessage("");
+
+                    if (cancelServiceChecked) {
+                      try {
+                        setManageMessage("Cancelling service...");
+
+                        const payload = {
+                          memberFirst: firstName,             // from oauthlogin
+                          memberLast: lastName,               // from oauthlogin
+                          memberSubID: petSubID,              // from oauthlogin
+                          subscriptionType: subscriptionType, // current state value
+
+                          petName: "",
+                          petSpecies: "",
+                          petBreed: "",
+                          petSex: "",
+
+                          cancelService: "Y",
+                        };
+
+                        const res = await fetch("/api/pet-service", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            action: "cancelService",
+                            payload,
+                          }),
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                          setManageMessage(
+                            getApiMessage(data.message) ||
+                            getApiMessage(data.response?.message) ||
+                            getApiMessage(data.response?.error) ||
+                            getApiMessage(data.response) ||
+                            "Cancel service failed."
+                          );
+                          return;
+                        }
+                          const apiResultMessage =
+                            data.response?.body?.results ||
+                            data.response?.results ||
+                            data.response?.body?.message ||
+                            data.message ||
+                            "Submit completed successfully.";
+
+                          setManageMessage(`${apiResultMessage} Refreshing in 5 seconds...`);
+ 
+                          setTimeout(() => {
+                            window.location.reload();
+                          }, 5000);
+
+                        return;
+                      } catch (error) {
+                        setManageMessage(
+                          error instanceof Error
+                            ? error.message
+                            : "Unexpected error cancelling service."
+                        );
+                        return;
+                      }
+                    }
+
+                    if (removePetChecked) {
+                      try {
+                        setManageMessage("Removing pet...");
+
+                        const selectedPetName = petsToRemove[0] || "";
+
+                        const payload = {
+                          memberFirst: firstName,
+                          memberLast: lastName,
+                          memberSubID: petSubID,
+                          subscriptionType: subscriptionType,
+
+                          petName: selectedPetName,
+                          petSpecies: "",
+                          petBreed: "",
+                          petSex: "",
+
+                          cancelService: "",
+                        };
+
+                        const res = await fetch("/api/pet-service", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            action: "removePet",
+                            payload,
+                          }),
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                          setManageMessage(
+                            getApiMessage(data.message) ||
+                            getApiMessage(data.response?.message) ||
+                            getApiMessage(data.response?.error) ||
+                            getApiMessage(data.response) ||
+                            "Remove pet failed."
+                          );
+                          return;
+                        }
+
+                        let responseBody = data.response?.body;
+
+                        if (typeof responseBody === "string") {
+                          try {
+                            responseBody = JSON.parse(responseBody);
+                          } catch {
+                            responseBody = {};
+                          }
+                        }
+
+                        const apiResultMessage =
+                          responseBody?.results ||
+                          data.response?.results ||
+                          data.results ||
+                          "Pet removed successfully.";
+
+                        setManageMessage(
+                          `${apiResultMessage} Refreshing in 5 seconds...`
+                        );
+
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 5000);
+
+                        return;
+                      } catch (error) {
+                        setManageMessage(
+                          error instanceof Error
+                            ? error.message
+                            : "Unexpected error removing pet."
+                        );
+                        return;
+                      }
+                    }
+                    
+                    if (addPetChecked) {
+                      try {
+                        setManageMessage("");
+
+                        if (!newPetName || !newPetSpecies || !newPetSex) {
+                          setManageMessage("Pet Name, Pet Species, and Pet Sex are required.");
+                          return;
+                        }
+
+                        setManageMessage("Adding pet...");
+
+                        const payload = {
+                          memberFirst: firstName,
+                          memberLast: lastName,
+                          memberSubID: petSubID,
+                          subscriptionType: subscriptionType,
+
+                          petName: newPetName,
+                          petSpecies: newPetSpecies,
+                          petBreed: newPetBreed,
+                          petSex: newPetSex,
+
+                          cancelService: "",
+                        };
+
+                        const res = await fetch("/api/pet-service", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            action: "addSubsequentPet",
+                            payload,
+                          }),
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                          setManageMessage(
+                            getApiMessage(data.message) ||
+                              getApiMessage(data.response?.message) ||
+                              getApiMessage(data.response?.error) ||
+                              getApiMessage(data.response) ||
+                              "Add pet failed."
+                          );
+                          return;
+                        }
+
+                        let responseBody = data.response?.body;
+
+                        if (typeof responseBody === "string") {
+                          try {
+                            responseBody = JSON.parse(responseBody);
+                          } catch {
+                            responseBody = {};
+                          }
+                        }
+
+                        const apiResultMessage =
+                          responseBody?.results ||
+                          data.response?.results ||
+                          data.results ||
+                          "Pet added successfully.";
+
+                        setManageMessage(`${apiResultMessage} Refreshing in 5 seconds...`);
+
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 5000);
+
+                        return;
+                      } catch (error) {
+                        setManageMessage(
+                          error instanceof Error
+                            ? error.message
+                            : "Unexpected error adding pet."
+                        );
+                        return;
+                      }
+                    }
+
                   }}
                 >
-                  Save
+                  Submit
                 </button>
               </div>
             </div>
