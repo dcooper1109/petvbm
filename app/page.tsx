@@ -940,10 +940,11 @@ export default function Home() {
               <div className="modal-actions">
                 <button
                   type="button"
-                  className="modal-button close-button"
+                  className="dialog-close"
                   onClick={() => setManageOpen(false)}
+                  aria-label="Close"
                 >
-                  Close
+                  ×
                 </button>
 
                 <button

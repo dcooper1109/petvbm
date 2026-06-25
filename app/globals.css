@@ -587,18 +587,35 @@ body {
   white-space: nowrap;
 }
 
-.close-button {
-  height: 38px;
-  min-width: 142px;
-  border: none;
-  border-radius: 999px;
-  background: #777e78; 
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 0 24px;
+
+.manage-modal {
+  position: relative;
 }
 
-.close-button:hover {
-  background: #6b7280;
+.dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  width: 34px;
+  height: 34px;
+
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: background-color .2s ease, color .2s ease;
+}
+
+.dialog-close:hover {
+  background-color: #f2f2f2;
+  color: #000;
 }
