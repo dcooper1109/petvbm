@@ -204,10 +204,13 @@ export default function Home() {
   const [manageEmail, setManageEmail] = useState("");
   const [manageMessage, setManageMessage] = useState("");
 
-  const [loadingLookup, setLoadingLookup] = useState(false);
+  const [partnerName, setPartnerName] = useState("");
+
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [loadingLookup, setLoadingLookup] = useState(false);
 
   const [isError, setIsError] = useState(false);
+  const [confirmCancelService, setConfirmCancelService] = useState(false);
 
   const [lookupErrors, setLookupErrors] = useState({
     policyId: false,
@@ -223,10 +226,11 @@ export default function Home() {
   const [medsLoadError, setMedsLoadError] = useState("");
 
   const selectedPet = pets.length > 0 ? pets[selectedPetIndex] : null;
-
+  
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [accessAllowed, setAccessAllowed] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
+  
 
   const [cancelServiceChecked, setCancelServiceChecked] = useState(false);
   const [removePetChecked, setRemovePetChecked] = useState(false);
@@ -239,7 +243,6 @@ export default function Home() {
   const [newPetSex, setNewPetSex] = useState("");
 
   const [firstName, setFirstName] = useState("");
-  const [mobilePhone, setMobilePhone] = useState("");
   const [petSubID, setPetSubID] = useState("");
 
 
@@ -279,39 +282,57 @@ export default function Home() {
 
         const data = await res.json();
 
-        const loginBody =
-          typeof data.body === "string"
-            ? JSON.parse(data.body)
-            : data.body || data;
+        let loginBody = data.body || data;
 
-      if (
-        res.ok &&
-        loginBody?.petvantagerxPortalAccess === true
-      ) {
-        const oauthLastName = loginBody.lastName || "";
-        const oauthPetSubID = loginBody.petSubID || "";
+        if (typeof loginBody === "string") {
+          try {
+            loginBody = JSON.parse(loginBody);
+          } catch {
+            loginBody = {};
+          }
+        }
 
-        setFirstName(loginBody.firstName || "");
-        setLastName(oauthLastName);
-        setMobilePhone(loginBody.mobilePhone || "");
-        setPetSubID(oauthPetSubID);
+        if (
+          res.ok &&
+          loginBody?.authorized === true &&
+          loginBody?.petvantagerxPortalAccess === true
+        ) {
+          const oauthLastName = loginBody.lastName || "";
+          const oauthPetSubID = loginBody.petSubID || "";
 
-        setAccessAllowed(true);
-        setAccessMessage("");
+          setPartnerName(loginBody.partnerName || "");
+          setFirstName(loginBody.firstName || "");
+          setLastName(oauthLastName);
+          setMemberMobilePhone(loginBody.mobilePhone || "");
+          setPetSubID(oauthPetSubID);
 
-        await handleLookup(oauthLastName, oauthPetSubID);
-        
-      } else {
+          setAccessAllowed(true);
+          setAccessMessage("");
+
+          try {
+            await handleLookup(oauthLastName, oauthPetSubID);
+          } catch (lookupError) {
+            console.error("Member lookup failed after OAuth access check:", lookupError);
+            setStatus("Access verified, but member lookup failed.");
+            setIsError(true);
+          }
+        } else {
+          setAccessAllowed(false);
+          setAccessMessage(
+            loginBody?.results ||
+              loginBody?.message ||
+              data?.message ||
+              "You are not authorized to access PetVantageRx.com."
+          );
+        }
+      } catch (err) {
+        console.error("OAuth access check failed:", err);
         setAccessAllowed(false);
         setAccessMessage(
-          loginBody?.results ||
-          data?.message ||
-          "You are not authorized to access PetVantageRx.com."
+          err instanceof Error
+            ? err.message
+            : "Unable to verify PetVantageRx.com access."
         );
-      }
-      } catch (err) {
-        setAccessAllowed(false);
-        setAccessMessage("Unable to verify PetVantageRx.com access.");
       } finally {
         setCheckingAccess(false);
       }
@@ -580,10 +601,19 @@ export default function Home() {
           </a>
           
           <a
-            href="mailto:d2csupport@petvantagerx.com?subject=PetVantageRx.com Support Request&body=Please describe your issue."
-            className="contact-button"
+          
+            href={`mailto:d2csupport@petvantagerx.com?subject=${encodeURIComponent(
+              `PetVantageRx Support - ${partnerName || "Unknown Partner"}`
+            )}&body=${encodeURIComponent(
+            `Partner: ${partnerName || "Unknown Partner"}
+            Subscription ID: ${petSubID}
+
+            Please describe your issue below:
+
+            `
+            )}`}
           >
-            ✉ Contact Us
+           📧 Contact Us
           </a>
         </div>
 
@@ -803,6 +833,7 @@ export default function Home() {
                       if (e.target.checked) {
                         setRemovePetChecked(false);
                         setAddPetChecked(false);
+                        setConfirmCancelService(false);
                         setPetsToRemove([]);
                       }
                     }}
@@ -937,6 +968,21 @@ export default function Home() {
                 <div className="submit-message">{manageMessage}</div>
               )}
 
+               {cancelServiceChecked && (
+                 <div className="confirm-cancel-box">
+                   <label className="confirm-cancel-label">
+                     <input
+                       type="checkbox"
+                       checked={confirmCancelService}
+                       onChange={(e) => setConfirmCancelService(e.target.checked)}
+                     />
+                     <span>
+                       Are you sure you want to cancel your subscription?
+                     </span>
+                   </label>
+                 </div>
+               )}
+                
               <div className="modal-actions">
                 <button
                   type="button"
@@ -950,6 +996,7 @@ export default function Home() {
                 <button
                   type="button"
                   className="gold-button"
+                  disabled={cancelServiceChecked && !confirmCancelService}
                   onClick={async () => {
                     setManageMessage("");
 
