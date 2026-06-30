@@ -22,6 +22,11 @@ type Pet = {
   petBreed: string;
 };
 
+type ManagePet = {
+  oldPetName: string;
+  petName: string;
+};
+
 type MemberData = {
   first: string;
   street: string;
@@ -203,6 +208,8 @@ export default function Home() {
   const [manageMobilePhone, setManageMobilePhone] = useState("");
   const [manageEmail, setManageEmail] = useState("");
   const [manageMessage, setManageMessage] = useState("");
+  const [managePets, setManagePets] = useState<ManagePet[]>([]);
+  const [loadingMemberPetUpdate, setLoadingMemberPetUpdate] = useState(false);
 
   const [partnerName, setPartnerName] = useState("");
 
@@ -434,6 +441,85 @@ export default function Home() {
     }
   }
 
+  async function handleMemberPetUpdate() {
+    setManageMessage("");
+
+    if (!partnerName || !petSubID) {
+      setManageMessage("Unable to update. Partner Name or Subscription ID is missing.");
+      return;
+    }
+
+    if (!manageFirstName || !manageLastName || !manageMobilePhone) {
+      setManageMessage("First Name, Last Name, and Mobile Phone are required.");
+      return;
+    }
+
+    setLoadingMemberPetUpdate(true);
+    setManageMessage("Updating member and pet information...");
+
+    const payload = {
+      partnerName,
+      memberSubID: petSubID,
+      memberFirst: manageFirstName,
+      memberLast: manageLastName,
+      mobilePhone: manageMobilePhone,
+      pets: managePets
+        .filter((pet) => pet.oldPetName || pet.petName)
+        .map((pet) => ({
+          oldPetName: pet.oldPetName,
+          petName: pet.petName,
+        })),
+    };
+
+    try {
+      const res = await fetch("/api/petmemberupdate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data?.success === false) {
+        setManageMessage(
+          getApiMessage(data?.message) ||
+            getApiMessage(data?.response?.message) ||
+            getApiMessage(data?.response?.error) ||
+            getApiMessage(data?.response) ||
+            "Member and pet update failed."
+        );
+        setManageMessage("Update successful! Refreshing...");
+
+        setTimeout(() => {
+          handleLookup();
+          setManageDialogOpen(false);
+        }, 5000);
+      }
+
+      const apiResultMessage =
+        data?.body?.results ||
+        data?.results ||
+        data?.message ||
+        "Member and pet information updated successfully.";
+
+      setManageMessage(`${apiResultMessage} Refreshing in 5 seconds...`);
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 5000);
+    } catch (error) {
+      setManageMessage(
+        error instanceof Error
+          ? error.message
+          : "Unexpected error updating member and pet information."
+      );
+    } finally {
+      setLoadingMemberPetUpdate(false);
+    }
+  }
+
   async function handleSubmit() {
     if (!memberLoaded) {
       setStatus("Lookup member first");
@@ -578,6 +664,12 @@ export default function Home() {
               setManageLastName(lastName || "");
               setManageMobilePhone(memberMobilePhone || "");
               setManageEmail(memberEmail || "");
+              setManagePets(
+                pets.map((pet) => ({
+                  oldPetName: pet.petName || "",
+                  petName: pet.petName || "",
+                }))
+              );
 
               setCancelServiceChecked(false);
               setRemovePetChecked(false);
@@ -787,37 +879,74 @@ export default function Home() {
             <div className="manage-modal">
               <h2 className="product-title">Manage Subscription</h2>
 
-              <div className="manage-grid">
-                <div className="field-group">
-                  <label>First Name</label>
-                  <input
-                    value={manageFirstName}
-                    onChange={(e) => setManageFirstName(e.target.value)}
-                  />
+              <div className="manage-subsection">
+                <h3>Update Member and Pet Names</h3>
+
+                <div className="manage-grid">
+                  <div className="field-group">
+                    <label>
+                      🔒 Member Subscription ID
+                    </label>
+
+                    <input
+                      value={petSubID}
+                      readOnly
+                      className="readonly-input"
+                    />
+                  </div>
+
+                  <div className="field-group">
+                    <label>First Name</label>
+                    <input
+                      value={manageFirstName}
+                      onChange={(e) => setManageFirstName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="field-group">
+                    <label>Last Name</label>
+                    <input
+                      value={manageLastName}
+                      onChange={(e) => setManageLastName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="field-group">
+                    <label>Mobile Phone</label>
+                    <input
+                      value={manageMobilePhone}
+                      onChange={(e) => setManageMobilePhone(e.target.value)}
+                    />
+                  </div>
+
+                  {managePets.map((pet, index) => (
+                    <div className="field-group" key={`${pet.oldPetName}-${index}`}>
+                      <label>Pet {index + 1} Name</label>
+                      <input
+                        value={pet.petName}
+                        onChange={(e) => {
+                          const updatedPets = [...managePets];
+                          updatedPets[index] = {
+                            ...updatedPets[index],
+                            petName: e.target.value,
+                          };
+                          setManagePets(updatedPets);
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
 
-                <div className="field-group">
-                  <label>Last Name</label>
-                  <input
-                    value={manageLastName}
-                    onChange={(e) => setManageLastName(e.target.value)}
-                  />
-                </div>
 
-                <div className="field-group">
-                  <label>Mobile Phone</label>
-                  <input
-                    value={manageMobilePhone}
-                    onChange={(e) => setManageMobilePhone(e.target.value)}
-                  />
-                </div>
-
-                <div className="field-group">
-                  <label>Email</label>
-                  <input
-                    value={manageEmail}
-                    onChange={(e) => setManageEmail(e.target.value)}
-                  />
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+                  <button
+                    type="button"
+                    className="gold-button"
+                    disabled={loadingMemberPetUpdate}
+                    onClick={handleMemberPetUpdate}
+                  >
+                    {loadingMemberPetUpdate ? "Updating..." : "Update"}
+                  </button>
                 </div>
               </div>
 
