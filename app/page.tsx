@@ -494,7 +494,7 @@ export default function Home() {
 
         setTimeout(() => {
           handleLookup();
-          setManageDialogOpen(false);
+          setManageOpen(false);
         }, 5000);
       }
 
