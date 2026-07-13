@@ -40,6 +40,26 @@ type MemberData = {
   pets: Pet[];
 };
 
+type HistoryItem = {
+  new_dateofaction: string;
+  new_description: string;
+  new_actiondetail: string | null;
+};
+
+type HistoryResponse = {
+  results: HistoryItem[];
+  pageNumber: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+};
+
+type HistorySortField =
+  | "new_dateofaction"
+  | "new_description";
+
+type HistorySortOrder = "asc" | "desc";
+
 function CustomSelect({
   label,
   value,
@@ -252,6 +272,162 @@ export default function Home() {
   const [firstName, setFirstName] = useState("");
   const [petSubID, setPetSubID] = useState("");
 
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>(
+    []
+  );
+
+  const [historyPageNumber, setHistoryPageNumber] = useState(1);
+  const [historyPageSize] = useState(10);
+  const [historyTotalRecords, setHistoryTotalRecords] =
+    useState(0);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+
+  const [historySortBy, setHistorySortBy] =
+    useState<HistorySortField>("new_dateofaction");
+
+  const [historySortOrder, setHistorySortOrder] =
+    useState<HistorySortOrder>("asc");
+
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+
+  async function loadHistory(
+    pageNumber = historyPageNumber,
+    sortBy = historySortBy,
+    sortOrder = historySortOrder
+  ) {
+    if (!petSubID?.trim()) {
+      setHistoryError(
+        "A Member Subscription ID is required to retrieve history."
+      );
+      return;
+    }
+
+    try {
+      setHistoryLoading(true);
+      setHistoryError("");
+
+      const response = await fetch("/api/get-history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          memberInsID: petSubID.trim(),
+          sortBy,
+          pageSize: historyPageSize,
+          pageNumber,
+          sortOrder,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || "Unable to retrieve history."
+        );
+      }
+
+      const historyData = data as HistoryResponse;
+
+      setHistoryItems(
+        Array.isArray(historyData.results)
+          ? historyData.results
+          : []
+      );
+
+      setHistoryPageNumber(historyData.pageNumber || pageNumber);
+      setHistoryTotalRecords(historyData.totalRecords || 0);
+      setHistoryTotalPages(
+        Math.max(historyData.totalPages || 1, 1)
+      );
+    } catch (error) {
+      console.error("History lookup error:", error);
+
+      setHistoryItems([]);
+      setHistoryTotalRecords(0);
+      setHistoryTotalPages(1);
+
+      setHistoryError(
+        error instanceof Error
+          ? error.message
+          : "Unable to retrieve history."
+      );
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  async function openHistoryDialog() {
+    const initialPage = 1;
+    const initialSortBy: HistorySortField =
+      "new_dateofaction";
+    const initialSortOrder: HistorySortOrder = "asc";
+
+    setHistoryOpen(true);
+    setHistoryPageNumber(initialPage);
+    setHistorySortBy(initialSortBy);
+    setHistorySortOrder(initialSortOrder);
+    setHistoryItems([]);
+    setHistoryError("");
+
+    await loadHistory(
+      initialPage,
+      initialSortBy,
+      initialSortOrder
+    );
+  }
+
+  function closeHistoryDialog() {
+    setHistoryOpen(false);
+    setHistoryError("");
+  }
+
+  async function changeHistoryPage(newPage: number) {
+    if (
+      newPage < 1 ||
+      newPage > historyTotalPages ||
+      historyLoading
+    ) {
+      return;
+    }
+
+    setHistoryPageNumber(newPage);
+
+    await loadHistory(
+      newPage,
+      historySortBy,
+      historySortOrder
+    );
+  }
+
+  async function changeHistorySortBy(
+    newSortBy: HistorySortField
+  ) {
+    setHistorySortBy(newSortBy);
+    setHistoryPageNumber(1);
+
+    await loadHistory(
+      1,
+      newSortBy,
+      historySortOrder
+    );
+  }
+
+  async function changeHistorySortOrder(
+    newSortOrder: HistorySortOrder
+  ) {
+    setHistorySortOrder(newSortOrder);
+    setHistoryPageNumber(1);
+
+    await loadHistory(
+      1,
+      historySortBy,
+      newSortOrder
+    );
+  }
 
   async function loadMedicationOptions() {
     setLoadingMeds(true);
@@ -688,24 +864,32 @@ export default function Home() {
             ⚙ Manage Subscr.
           </button>
 
+          <button
+            type="button"
+            onClick={openHistoryDialog}
+            className="contact-button"
+          >
+            🕘 History
+          </button>
+
           <a href="/auth/logout" className="contact-button">
             🔓 Log Out
           </a>
-          
+                    
           <a
-          
+            className="contact-button"
             href={`mailto:d2csupport@petvantagerx.com?subject=${encodeURIComponent(
               `PetVantageRx Support - ${partnerName || "Unknown Partner"}`
             )}&body=${encodeURIComponent(
-            `Partner: ${partnerName || "Unknown Partner"}
-            Subscription ID: ${petSubID}
+              `Partner: ${partnerName || "Unknown Partner"}
+          Subscription ID: ${petSubID}
 
-            Please describe your issue below:
+          Please describe your issue below:
 
-            `
+          `
             )}`}
           >
-           📧 Contact Us
+            📧 Contact Us
           </a>
         </div>
 
@@ -1359,6 +1543,179 @@ export default function Home() {
                 >
                   Submit
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {historyOpen && (
+          <div
+            className="history-overlay"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                closeHistoryDialog();
+              }
+            }}
+          >
+            <div
+              className="history-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="history-dialog-title"
+            >
+              <div className="history-dialog-header">
+                <div>
+                  <h2 id="history-dialog-title">History</h2>
+
+                  <div className="history-member-id">
+                    Subscription ID: {petSubID}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="history-close-button"
+                  onClick={closeHistoryDialog}
+                  aria-label="Close History"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="history-controls">
+                <label>
+                  <span>Sort By</span>
+
+                  <select
+                    value={historySortBy}
+                    onChange={(event) =>
+                      changeHistorySortBy(
+                        event.target.value as HistorySortField
+                      )
+                    }
+                    disabled={historyLoading}
+                  >
+                    <option value="new_dateofaction">
+                      Action Date
+                    </option>
+
+                    <option value="new_description">
+                      Description
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Sort Order</span>
+
+                  <select
+                    value={historySortOrder}
+                    onChange={(event) =>
+                      changeHistorySortOrder(
+                        event.target.value as HistorySortOrder
+                      )
+                    }
+                    disabled={historyLoading}
+                  >
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                  </select>
+                </label>
+              </div>
+
+              {historyError && (
+                <div className="history-error">
+                  {historyError}
+                </div>
+              )}
+
+              <div className="history-table-container">
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Action Date</th>
+                      <th>Description</th>
+                      <th>Action Detail</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {historyLoading ? (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="history-message-cell"
+                        >
+                          Loading history...
+                        </td>
+                      </tr>
+                    ) : historyItems.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="history-message-cell"
+                        >
+                          No history records were found.
+                        </td>
+                      </tr>
+                    ) : (
+                      historyItems.map((item, index) => (
+                        <tr
+                          key={`${item.new_dateofaction}-${item.new_description}-${index}`}
+                        >
+                          <td>{item.new_dateofaction || "—"}</td>
+
+                          <td>{item.new_description || "—"}</td>
+
+                          <td>
+                            {item.new_actiondetail?.trim() || "—"}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="history-dialog-footer">
+                <div className="history-record-count">
+                  {historyTotalRecords === 1
+                    ? "1 record"
+                    : `${historyTotalRecords} records`}
+                </div>
+
+                <div className="history-pagination">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      changeHistoryPage(historyPageNumber - 1)
+                    }
+                    disabled={
+                      historyLoading || historyPageNumber <= 1
+                    }
+                  >
+                    Previous
+                  </button>
+
+                  <span>
+                    Page {historyPageNumber} of{" "}
+                    {historyTotalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      changeHistoryPage(historyPageNumber + 1)
+                    }
+                    disabled={
+                      historyLoading ||
+                      historyPageNumber >= historyTotalPages
+                    }
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
           </div>
