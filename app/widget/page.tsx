@@ -22,6 +22,11 @@ type Pet = {
   petBreed: string;
 };
 
+type ManagePet = {
+  oldPetName: string;
+  petName: string;
+};
+
 type MemberData = {
   first: string;
   street: string;
@@ -34,6 +39,26 @@ type MemberData = {
   subscriptionStatus?: string;
   pets: Pet[];
 };
+
+type HistoryItem = {
+  new_dateofaction: string;
+  new_description: string;
+  new_actiondetail: string | null;
+};
+
+type HistoryResponse = {
+  results: HistoryItem[];
+  pageNumber: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+};
+
+type HistorySortField =
+  | "new_dateofaction"
+  | "new_description";
+
+type HistorySortOrder = "asc" | "desc";
 
 function CustomSelect({
   label,
@@ -159,6 +184,196 @@ function CustomSelect({
   );
 }
 
+function getApiMessage(value: any): string {
+  if (!value) return "";
+
+  if (typeof value === "string") return value;
+
+  if (typeof value === "object") {
+    return (
+      value.message ||
+      value.error ||
+      value.results ||
+      JSON.stringify(value)
+    );
+  }
+
+  return String(value);
+}
+
+const faqs = [
+  {
+    question: "What are the key benefits of our discount program?",
+    answer: (
+      <>
+        <p>
+          Transparent prices for pet parents. Save up to 50% compared with
+          veterinary clinic prices.
+        </p>
+        <p>
+          PetVantageRx works with reputable pet pharmacies that negotiate
+          directly with manufacturers, allowing us to pass savings on to pet
+          parents, plus an additional discount.
+        </p>
+        <p>
+          Members receive savings on prescription pet medications, trusted
+          human equivalents, vaccines, supplements, flea and tick treatments,
+          heartworm prevention, and other everyday pet care products.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "Are your products the same ones sold at my veterinarian’s office?",
+    answer: (
+      <>
+        <p>
+          Yes. The medications and products available through PetVantageRx are
+          the same trusted products available through many veterinary clinics,
+          at lower prices.
+        </p>
+        <p>
+          Our pharmacy partners are fully accredited and source products from
+          manufacturers or licensed distributors. Products are stored and
+          handled according to applicable standards.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "What does the subscription cost?",
+    answer: (
+      <p>
+        The subscription costs $4.99 per month for your first pet and $3.99 per
+        month for each additional pet.
+      </p>
+    ),
+  },
+  {
+    question: "How do I enroll?",
+    answer: (
+      <>
+        <p>To enroll:</p>
+        <ul>
+          <li>Visit PetVantageRx.com.</li>
+          <li>Register yourself and your pet or pets.</li>
+          <li>Complete your subscription purchase through the member portal.</li>
+        </ul>
+        <p>
+          Once payment is processed, you and your pet or pets will be enrolled
+          in the program.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "Will my subscription automatically renew each month or year?",
+    answer: (
+      <>
+        <p>
+          Yes. You can choose a monthly or annual subscription. You will be
+          charged for the first term when you sign up, and the subscription will
+          automatically renew using the payment method on file.
+        </p>
+        <p>
+          To avoid the next charge, cancel before the current subscription term
+          ends. After cancellation, benefits continue through the end of the
+          paid term.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "Are there any additional savings opportunities?",
+    answer: (
+      <>
+        <p>
+          Yes. Eligible products may qualify for additional savings through a
+          pharmacy partner’s Auto-Ship program.
+        </p>
+        <ul>
+          <li>5% off prescription medications</li>
+          <li>10% off over-the-counter medications</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    question: "Once I subscribe, how do I access the program?",
+    answer: (
+      <>
+        <p>
+          After your subscription purchase, you will receive an email and text
+          message confirming your subscription and discount code.
+        </p>
+        <p>
+          You will then be directed to the medication and product search page,
+          where you can find the products prescribed for your pet and access
+          discounted pricing.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "Can I use my discount code directly on a pharmacy partner’s website?",
+    answer: (
+      <>
+        <p>
+          No. You must access the pharmacy partner through the PetVantageRx Pet
+          Parent Portal, Welcome Email, or Welcome Text so that your discount is
+          applied correctly.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "What is your refund and cancellation policy?",
+    answer: (
+      <>
+        <p>
+          You can cancel at any time by logging into your Pet Parent account and
+          selecting Cancel Subscription. Subscription fees are non-refundable
+          and are not prorated except where the Terms and Conditions state
+          otherwise.
+        </p>
+        <p>
+          After cancellation, benefits remain available through the end of the
+          current paid subscription term.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "I forgot my password. What should I do?",
+    answer: (
+      <p>
+        Go to PetVantageRx.com, select Sign In, and then select Forgot Password.
+        Enter the email address associated with your account to receive reset
+        instructions.
+      </p>
+    ),
+  },
+  {
+    question: "How do I change my password?",
+    answer: (
+      <p>
+        After signing in, go to Account & Orders and select Profile. You can
+        update and save your password there.
+      </p>
+    ),
+  },
+  {
+    question: "Where can I see the subscription Terms and Conditions?",
+    answer: (
+      <p>
+        The PetVantageRx Subscription Plan Terms and Conditions are displayed
+        below as part of registration and can also be published at
+        PetVantageRx.com/terms.
+      </p>
+    ),
+  },
+];
+
 export default function Home() {
   const [lastName, setLastName] = useState("");
   const [medication, setMedication] = useState("");
@@ -180,17 +395,23 @@ export default function Home() {
   const [memberEmail, setMemberEmail] = useState("");
   const [memberMobilePhone, setMemberMobilePhone] = useState("");
 
+  const [faqOpen, setFaqOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [manageFirstName, setManageFirstName] = useState("");
   const [manageLastName, setManageLastName] = useState("");
   const [manageMobilePhone, setManageMobilePhone] = useState("");
   const [manageEmail, setManageEmail] = useState("");
   const [manageMessage, setManageMessage] = useState("");
+  const [managePets, setManagePets] = useState<ManagePet[]>([]);
+  const [loadingMemberPetUpdate, setLoadingMemberPetUpdate] = useState(false);
 
-  const [loadingLookup, setLoadingLookup] = useState(false);
+  const [partnerName, setPartnerName] = useState("");
+
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [loadingLookup, setLoadingLookup] = useState(false);
 
   const [isError, setIsError] = useState(false);
+  const [confirmCancelService, setConfirmCancelService] = useState(false);
 
   const [lookupErrors, setLookupErrors] = useState({
     policyId: false,
@@ -206,10 +427,11 @@ export default function Home() {
   const [medsLoadError, setMedsLoadError] = useState("");
 
   const selectedPet = pets.length > 0 ? pets[selectedPetIndex] : null;
-
+  
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [accessAllowed, setAccessAllowed] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
+  
 
   const [cancelServiceChecked, setCancelServiceChecked] = useState(false);
   const [removePetChecked, setRemovePetChecked] = useState(false);
@@ -222,9 +444,180 @@ export default function Home() {
   const [newPetSex, setNewPetSex] = useState("");
 
   const [firstName, setFirstName] = useState("");
-  const [mobilePhone, setMobilePhone] = useState("");
   const [petSubID, setPetSubID] = useState("");
 
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>(
+    []
+  );
+
+  const [historyPageNumber, setHistoryPageNumber] = useState(1);
+  const [historyPageSize] = useState(10);
+  const [historyTotalRecords, setHistoryTotalRecords] =
+    useState(0);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+
+  const [historySortBy, setHistorySortBy] =
+    useState<HistorySortField>("new_dateofaction");
+
+  const [historySortOrder, setHistorySortOrder] =
+    useState<HistorySortOrder>("asc");
+
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+
+  const [cancelReason, setCancelReason] = useState("");
+
+  const cancellationReasons = [
+    "Found Better Medication Pricing Elsewhere",
+    "My Pet No Longer Requires Medication",
+    "No Longer Have Pet",
+    "Only Needed for a One Time Issue",
+    "Product(s) Needed Frequently Out of Stock",
+    "Replacing with Pet Insurance",
+    "Shipping Takes Too Long",
+    "Subscription Too Expensive",
+    "Unable to Find Medication/Product Needed",
+    "Website is Too Difficult",
+    "Other",
+  ];
+
+  async function loadHistory(
+    pageNumber = historyPageNumber,
+    sortBy = historySortBy,
+    sortOrder = historySortOrder
+  ) {
+    if (!petSubID?.trim()) {
+      setHistoryError(
+        "A Member Subscription ID is required to retrieve history."
+      );
+      return;
+    }
+
+    try {
+      setHistoryLoading(true);
+      setHistoryError("");
+
+      const response = await fetch("/api/get-history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          memberInsID: petSubID.trim(),
+          sortBy,
+          pageSize: historyPageSize,
+          pageNumber,
+          sortOrder,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || "Unable to retrieve history."
+        );
+      }
+
+      const historyData = data as HistoryResponse;
+
+      setHistoryItems(
+        Array.isArray(historyData.results)
+          ? historyData.results
+          : []
+      );
+
+      setHistoryPageNumber(historyData.pageNumber || pageNumber);
+      setHistoryTotalRecords(historyData.totalRecords || 0);
+      setHistoryTotalPages(
+        Math.max(historyData.totalPages || 1, 1)
+      );
+    } catch (error) {
+      console.error("History lookup error:", error);
+
+      setHistoryItems([]);
+      setHistoryTotalRecords(0);
+      setHistoryTotalPages(1);
+
+      setHistoryError(
+        error instanceof Error
+          ? error.message
+          : "Unable to retrieve history."
+      );
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  async function openHistoryDialog() {
+    const initialPage = 1;
+    const initialSortBy: HistorySortField =
+      "new_dateofaction";
+    const initialSortOrder: HistorySortOrder = "asc";
+
+    setHistoryOpen(true);
+    setHistoryPageNumber(initialPage);
+    setHistorySortBy(initialSortBy);
+    setHistorySortOrder(initialSortOrder);
+    setHistoryItems([]);
+    setHistoryError("");
+
+    await loadHistory(
+      initialPage,
+      initialSortBy,
+      initialSortOrder
+    );
+  }
+
+  function closeHistoryDialog() {
+    setHistoryOpen(false);
+    setHistoryError("");
+  }
+
+  async function changeHistoryPage(newPage: number) {
+    if (
+      newPage < 1 ||
+      newPage > historyTotalPages ||
+      historyLoading
+    ) {
+      return;
+    }
+
+    setHistoryPageNumber(newPage);
+
+    await loadHistory(
+      newPage,
+      historySortBy,
+      historySortOrder
+    );
+  }
+
+  async function changeHistorySortBy(
+    newSortBy: HistorySortField
+  ) {
+    setHistorySortBy(newSortBy);
+    setHistoryPageNumber(1);
+
+    await loadHistory(
+      1,
+      newSortBy,
+      historySortOrder
+    );
+  }
+
+  async function changeHistorySortOrder(
+    newSortOrder: HistorySortOrder
+  ) {
+    setHistorySortOrder(newSortOrder);
+    setHistoryPageNumber(1);
+
+    await loadHistory(
+      1,
+      historySortBy,
+      newSortOrder
+    );
+  }
 
   async function loadMedicationOptions() {
     setLoadingMeds(true);
@@ -262,39 +655,57 @@ export default function Home() {
 
         const data = await res.json();
 
-        const loginBody =
-          typeof data.body === "string"
-            ? JSON.parse(data.body)
-            : data.body || data;
+        let loginBody = data.body || data;
 
-      if (
-        res.ok &&
-        loginBody?.petvantagerxPortalAccess === true
-      ) {
-        const oauthLastName = loginBody.lastName || "";
-        const oauthPetSubID = loginBody.petSubID || "";
+        if (typeof loginBody === "string") {
+          try {
+            loginBody = JSON.parse(loginBody);
+          } catch {
+            loginBody = {};
+          }
+        }
 
-        setFirstName(loginBody.firstName || "");
-        setLastName(oauthLastName);
-        setMobilePhone(loginBody.mobilePhone || "");
-        setPetSubID(oauthPetSubID);
+        if (
+          res.ok &&
+          loginBody?.authorized === true &&
+          loginBody?.petvantagerxPortalAccess === true
+        ) {
+          const oauthLastName = loginBody.lastName || "";
+          const oauthPetSubID = loginBody.petSubID || "";
 
-        setAccessAllowed(true);
-        setAccessMessage("");
+          setPartnerName(loginBody.partnerName || "");
+          setFirstName(loginBody.firstName || "");
+          setLastName(oauthLastName);
+          setMemberMobilePhone(loginBody.mobilePhone || "");
+          setPetSubID(oauthPetSubID);
 
-        await handleLookup(oauthLastName, oauthPetSubID);
-        
-      } else {
+          setAccessAllowed(true);
+          setAccessMessage("");
+
+          try {
+            await handleLookup(oauthLastName, oauthPetSubID);
+          } catch (lookupError) {
+            console.error("Member lookup failed after OAuth access check:", lookupError);
+            setStatus("Access verified, but member lookup failed.");
+            setIsError(true);
+          }
+        } else {
+          setAccessAllowed(false);
+          setAccessMessage(
+            loginBody?.results ||
+              loginBody?.message ||
+              data?.message ||
+              "You are not authorized to access PetVantageRx.com."
+          );
+        }
+      } catch (err) {
+        console.error("OAuth access check failed:", err);
         setAccessAllowed(false);
         setAccessMessage(
-          loginBody?.results ||
-          data?.message ||
-          "You are not authorized to access PetVantageRx.com."
+          err instanceof Error
+            ? err.message
+            : "Unable to verify PetVantageRx.com access."
         );
-      }
-      } catch (err) {
-        setAccessAllowed(false);
-        setAccessMessage("Unable to verify PetVantageRx.com access.");
       } finally {
         setCheckingAccess(false);
       }
@@ -393,6 +804,85 @@ export default function Home() {
       setIsError(true);
     } finally {
       setLoadingLookup(false);
+    }
+  }
+
+  async function handleMemberPetUpdate() {
+    setManageMessage("");
+
+    if (!partnerName || !petSubID) {
+      setManageMessage("Unable to update. Partner Name or Subscription ID is missing.");
+      return;
+    }
+
+    if (!manageFirstName || !manageLastName || !manageMobilePhone) {
+      setManageMessage("First Name, Last Name, and Mobile Phone are required.");
+      return;
+    }
+
+    setLoadingMemberPetUpdate(true);
+    setManageMessage("Updating member and pet information...");
+
+    const payload = {
+      partnerName,
+      memberSubID: petSubID,
+      memberFirst: manageFirstName,
+      memberLast: manageLastName,
+      mobilePhone: manageMobilePhone,
+      pets: managePets
+        .filter((pet) => pet.oldPetName || pet.petName)
+        .map((pet) => ({
+          oldPetName: pet.oldPetName,
+          petName: pet.petName,
+        })),
+    };
+
+    try {
+      const res = await fetch("/api/petmemberupdate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data?.success === false) {
+        setManageMessage(
+          getApiMessage(data?.message) ||
+            getApiMessage(data?.response?.message) ||
+            getApiMessage(data?.response?.error) ||
+            getApiMessage(data?.response) ||
+            "Member and pet update failed."
+        );
+        setManageMessage("Update successful! Refreshing...");
+
+        setTimeout(() => {
+          handleLookup();
+          setManageOpen(false);
+        }, 5000);
+      }
+
+      const apiResultMessage =
+        data?.body?.results ||
+        data?.results ||
+        data?.message ||
+        "Member and pet information updated successfully.";
+
+      setManageMessage(`${apiResultMessage} Refreshing in 5 seconds...`);
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 5000);
+    } catch (error) {
+      setManageMessage(
+        error instanceof Error
+          ? error.message
+          : "Unexpected error updating member and pet information."
+      );
+    } finally {
+      setLoadingMemberPetUpdate(false);
     }
   }
 
@@ -535,11 +1025,37 @@ export default function Home() {
           <button
             type="button"
             className="contact-button"
+            onClick={() => setFaqOpen(true)}
+          >
+            ❓ FAQ
+          </button>
+
+          <button
+            type="button"
+            className="contact-button"
             onClick={() => {
               setManageFirstName(firstName || "");
               setManageLastName(lastName || "");
               setManageMobilePhone(memberMobilePhone || "");
               setManageEmail(memberEmail || "");
+              setManagePets(
+                pets.map((pet) => ({
+                  oldPetName: pet.petName || "",
+                  petName: pet.petName || "",
+                }))
+              );
+
+              setCancelServiceChecked(false);
+              setCancelReason("");
+              setRemovePetChecked(false);
+              setAddPetChecked(false);
+              setPetsToRemove([]);
+
+              setNewPetName("");
+              setNewPetSpecies("");
+              setNewPetBreed("");
+              setNewPetSex("");
+
               setManageMessage("");
               setManageOpen(true);
             }}
@@ -547,15 +1063,32 @@ export default function Home() {
             ⚙ Manage Subscr.
           </button>
 
+          <button
+            type="button"
+            onClick={openHistoryDialog}
+            className="contact-button"
+          >
+            🕘 History
+          </button>
+
           <a href="/auth/logout" className="contact-button">
             🔓 Log Out
           </a>
-          
+                    
           <a
-            href="mailto:d2csupport@petvantagerx.com?subject=PetVantageRx.com Support Request&body=Please describe your issue."
             className="contact-button"
+            href={`mailto:d2csupport@petvantagerx.com?subject=${encodeURIComponent(
+              `PetVantageRx Support - ${partnerName || "Unknown Partner"}`
+            )}&body=${encodeURIComponent(
+              `Partner: ${partnerName || "Unknown Partner"}
+          Subscription ID: ${petSubID}
+
+          Please describe your issue below:
+
+          `
+            )}`}
           >
-            ✉ Contact Us
+            📧 Contact Us
           </a>
         </div>
 
@@ -724,42 +1257,159 @@ export default function Home() {
          </section>
         )}
 
+        {faqOpen && (
+          <div
+            className="modal-overlay"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setFaqOpen(false);
+              }
+            }}
+          >
+            <div
+              className="manage-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="faq-dialog-title"
+              style={{ maxHeight: "85vh", overflowY: "auto" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 16,
+                  marginBottom: 18,
+                }}
+              >
+                <h2 id="faq-dialog-title" className="product-title" style={{ margin: 0 }}>
+                  Frequently Asked Questions
+                </h2>
+
+                <button
+                  type="button"
+                  className="dialog-close"
+                  onClick={() => setFaqOpen(false)}
+                  aria-label="Close Frequently Asked Questions"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gap: 10 }}>
+                {faqs.map((faq) => (
+                  <details
+                    key={faq.question}
+                    style={{
+                      border: "1px solid #d9e2df",
+                      borderRadius: 10,
+                      backgroundColor: "#fbfdfc",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <summary
+                      style={{
+                        padding: "14px 16px",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        color: navy,
+                        fontSize: 15,
+                      }}
+                    >
+                      {faq.question}
+                    </summary>
+
+                    <div
+                      style={{
+                        padding: "0 16px 14px",
+                        color: "#374151",
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {faq.answer}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {manageOpen && (
           <div className="modal-overlay">
             <div className="manage-modal">
               <h2 className="product-title">Manage Subscription</h2>
 
-              <div className="manage-grid">
-                <div className="field-group">
-                  <label>First Name</label>
-                  <input
-                    value={manageFirstName}
-                    onChange={(e) => setManageFirstName(e.target.value)}
-                  />
+              <div className="manage-subsection">
+                <h3>Update Member and Pet Names</h3>
+
+                <div className="manage-grid">
+                  <div className="field-group">
+                    <label>
+                      🔒 Member Subscription ID
+                    </label>
+
+                    <input
+                      value={petSubID}
+                      readOnly
+                      className="readonly-input"
+                    />
+                  </div>
+
+                  <div className="field-group">
+                    <label>First Name</label>
+                    <input
+                      value={manageFirstName}
+                      onChange={(e) => setManageFirstName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="field-group">
+                    <label>Last Name</label>
+                    <input
+                      value={manageLastName}
+                      onChange={(e) => setManageLastName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="field-group">
+                    <label>Mobile Phone</label>
+                    <input
+                      value={manageMobilePhone}
+                      onChange={(e) => setManageMobilePhone(e.target.value)}
+                    />
+                  </div>
+
+                  {managePets.map((pet, index) => (
+                    <div className="field-group" key={`${pet.oldPetName}-${index}`}>
+                      <label>Pet {index + 1} Name</label>
+                      <input
+                        value={pet.petName}
+                        onChange={(e) => {
+                          const updatedPets = [...managePets];
+                          updatedPets[index] = {
+                            ...updatedPets[index],
+                            petName: e.target.value,
+                          };
+                          setManagePets(updatedPets);
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
 
-                <div className="field-group">
-                  <label>Last Name</label>
-                  <input
-                    value={manageLastName}
-                    onChange={(e) => setManageLastName(e.target.value)}
-                  />
-                </div>
 
-                <div className="field-group">
-                  <label>Mobile Phone</label>
-                  <input
-                    value={manageMobilePhone}
-                    onChange={(e) => setManageMobilePhone(e.target.value)}
-                  />
-                </div>
-
-                <div className="field-group">
-                  <label>Email</label>
-                  <input
-                    value={manageEmail}
-                    onChange={(e) => setManageEmail(e.target.value)}
-                  />
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+                  <button
+                    type="button"
+                    className="gold-button"
+                    disabled={loadingMemberPetUpdate}
+                    onClick={handleMemberPetUpdate}
+                  >
+                    {loadingMemberPetUpdate ? "Updating..." : "Update"}
+                  </button>
                 </div>
               </div>
 
@@ -771,10 +1421,18 @@ export default function Home() {
                     disabled={removePetChecked || addPetChecked}
                     onChange={(e) => {
                       setManageMessage("");
-                      setCancelServiceChecked(e.target.checked);
-                      if (e.target.checked) {
+                      const checked = e.target.checked;
+                      setCancelServiceChecked(checked);
+
+                      if (!checked) {
+                        setCancelReason("");
+                        setConfirmCancelService(false);
+                      }
+
+                      if (checked) {
                         setRemovePetChecked(false);
                         setAddPetChecked(false);
+                        setConfirmCancelService(false);
                         setPetsToRemove([]);
                       }
                     }}
@@ -829,7 +1487,7 @@ export default function Home() {
 
               {removePetChecked && (
                 <div className="manage-subsection">
-                  <h3>Remove Pet</h3>
+                  <h3>Remove Pet (select one)</h3>
 
                   <div className="remove-pet-row">
                     {pets.map((pet) => (
@@ -902,22 +1560,6 @@ export default function Home() {
                       </select>
                     </div>
                   </div>
-
-                  <button
-                    type="button"
-                    className="gold-button"
-                    style={{ marginTop: "20px" }}
-                    onClick={() => {
-                      if (!newPetName.trim() || !newPetSpecies.trim() || !newPetSex.trim()) {
-                        setManageMessage("Pet Name, Pet Species, and Pet Sex are required.");
-                        return;
-                      }
-
-                      setManageMessage("New pet saved locally. API call will be added later.");
-                    }}
-                  >
-                    Submit - Add Pet
-                  </button>
                 </div>
               )}
 
@@ -925,27 +1567,482 @@ export default function Home() {
                 <div className="submit-message">{manageMessage}</div>
               )}
 
+              {cancelServiceChecked && (
+                <div className="manage-subsection">
+                  <h3>Cancellation Reason</h3>
+
+                  <div className="field-group">
+                    <label>Reason *</label>
+                    <select
+                      value={cancelReason}
+                      onChange={(e) => {
+                        setManageMessage("");
+                        setCancelReason(e.target.value);
+                      }}
+                      className="input-short"
+                    >
+                      <option value="">Select a cancellation reason</option>
+                      {cancellationReasons.map((reason) => (
+                        <option key={reason} value={reason}>
+                          {reason}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+               {cancelServiceChecked && (
+                 <div className="confirm-cancel-box">
+                   <label className="confirm-cancel-label">
+                     <input
+                       type="checkbox"
+                       checked={confirmCancelService}
+                       onChange={(e) => setConfirmCancelService(e.target.checked)}
+                     />
+                     <span>
+                       Are you sure you want to cancel your subscription?
+                     </span>
+                   </label>
+                 </div>
+               )}
+                
               <div className="modal-actions">
                 <button
                   type="button"
-                  className="gold-button"
+                  className="dialog-close"
                   onClick={() => setManageOpen(false)}
+                  aria-label="Close"
                 >
-                  Cancel
+                  ×
                 </button>
 
                 <button
                   type="button"
                   className="gold-button"
-                  onClick={() => {
-                    setManageMessage("Saved locally. Refreshing page...");
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 800);
+                  disabled={
+                    cancelServiceChecked &&
+                    (!confirmCancelService || !cancelReason.trim())
+                  }
+                  onClick={async () => {
+                    setManageMessage("");
+
+                    if (cancelServiceChecked) {
+                      if (!cancelReason.trim()) {
+                        setManageMessage("Please select a cancellation reason.");
+                        return;
+                      }
+
+                      if (!confirmCancelService) {
+                        setManageMessage(
+                          "Please confirm that you want to cancel your subscription."
+                        );
+                        return;
+                      }
+
+                      try {
+                        setManageMessage("Cancelling service...");
+
+                        const payload = {
+                          memberFirst: firstName,             // from oauthlogin
+                          memberLast: lastName,               // from oauthlogin
+                          memberSubID: petSubID,              // from oauthlogin
+                          subscriptionType: subscriptionType, // current state value
+
+                          petName: "",
+                          petSpecies: "",
+                          petBreed: "",
+                          petSex: "",
+
+                          cancelService: "Y",
+                          reason: cancelReason,
+                        };
+
+                        const res = await fetch("/api/pet-service", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            action: "cancelService",
+                            payload,
+                          }),
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                          setManageMessage(
+                            getApiMessage(data.message) ||
+                            getApiMessage(data.response?.message) ||
+                            getApiMessage(data.response?.error) ||
+                            getApiMessage(data.response) ||
+                            "Cancel service failed."
+                          );
+                          return;
+                        }
+                          const apiResultMessage =
+                            data.response?.body?.results ||
+                            data.response?.results ||
+                            data.response?.body?.message ||
+                            data.message ||
+                            "Submit completed successfully.";
+
+                          setManageMessage(`${apiResultMessage} Refreshing in 5 seconds...`);
+ 
+                          setTimeout(() => {
+                            window.location.reload();
+                          }, 5000);
+
+                        return;
+                      } catch (error) {
+                        setManageMessage(
+                          error instanceof Error
+                            ? error.message
+                            : "Unexpected error cancelling service."
+                        );
+                        return;
+                      }
+                    }
+
+                    if (removePetChecked) {
+                      try {
+                        setManageMessage("Removing pet...");
+
+                        const selectedPetName = petsToRemove[0] || "";
+
+                        const payload = {
+                          memberFirst: firstName,
+                          memberLast: lastName,
+                          memberSubID: petSubID,
+                          subscriptionType: subscriptionType,
+
+                          petName: selectedPetName,
+                          petSpecies: "",
+                          petBreed: "",
+                          petSex: "",
+
+                          cancelService: "",
+                        };
+
+                        const res = await fetch("/api/pet-service", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            action: "removePet",
+                            payload,
+                          }),
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                          setManageMessage(
+                            getApiMessage(data.message) ||
+                            getApiMessage(data.response?.message) ||
+                            getApiMessage(data.response?.error) ||
+                            getApiMessage(data.response) ||
+                            "Remove pet failed."
+                          );
+                          return;
+                        }
+
+                        let responseBody = data.response?.body;
+
+                        if (typeof responseBody === "string") {
+                          try {
+                            responseBody = JSON.parse(responseBody);
+                          } catch {
+                            responseBody = {};
+                          }
+                        }
+
+                        const apiResultMessage =
+                          responseBody?.results ||
+                          data.response?.results ||
+                          data.results ||
+                          "Pet removed successfully.";
+
+                        setManageMessage(
+                          `${apiResultMessage} Refreshing in 5 seconds...`
+                        );
+
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 5000);
+
+                        return;
+                      } catch (error) {
+                        setManageMessage(
+                          error instanceof Error
+                            ? error.message
+                            : "Unexpected error removing pet."
+                        );
+                        return;
+                      }
+                    }
+                    
+                    if (addPetChecked) {
+                      try {
+                        setManageMessage("");
+
+                        if (!newPetName || !newPetSpecies || !newPetSex) {
+                          setManageMessage("Pet Name, Pet Species, and Pet Sex are required.");
+                          return;
+                        }
+
+                        setManageMessage("Adding pet...");
+
+                        const payload = {
+                          memberFirst: firstName,
+                          memberLast: lastName,
+                          memberSubID: petSubID,
+                          subscriptionType: subscriptionType,
+
+                          petName: newPetName,
+                          petSpecies: newPetSpecies,
+                          petBreed: newPetBreed,
+                          petSex: newPetSex,
+
+                          cancelService: "",
+                        };
+
+                        const res = await fetch("/api/pet-service", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            action: "addSubsequentPet",
+                            payload,
+                          }),
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                          setManageMessage(
+                            getApiMessage(data.message) ||
+                              getApiMessage(data.response?.message) ||
+                              getApiMessage(data.response?.error) ||
+                              getApiMessage(data.response) ||
+                              "Add pet failed."
+                          );
+                          return;
+                        }
+
+                        let responseBody = data.response?.body;
+
+                        if (typeof responseBody === "string") {
+                          try {
+                            responseBody = JSON.parse(responseBody);
+                          } catch {
+                            responseBody = {};
+                          }
+                        }
+
+                        const apiResultMessage =
+                          responseBody?.results ||
+                          data.response?.results ||
+                          data.results ||
+                          "Pet added successfully.";
+
+                        setManageMessage(`${apiResultMessage} Refreshing in 5 seconds...`);
+
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 5000);
+
+                        return;
+                      } catch (error) {
+                        setManageMessage(
+                          error instanceof Error
+                            ? error.message
+                            : "Unexpected error adding pet."
+                        );
+                        return;
+                      }
+                    }
+
                   }}
                 >
-                  Save
+                  Submit
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {historyOpen && (
+          <div
+            className="history-overlay"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                closeHistoryDialog();
+              }
+            }}
+          >
+            <div
+              className="history-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="history-dialog-title"
+            >
+              <div className="history-dialog-header">
+                <div>
+                  <h2 id="history-dialog-title">History</h2>
+
+                  <div className="history-member-id">
+                    Subscription ID: {petSubID}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="history-close-button"
+                  onClick={closeHistoryDialog}
+                  aria-label="Close History"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="history-controls">
+                <label>
+                  <span>Sort By</span>
+
+                  <select
+                    value={historySortBy}
+                    onChange={(event) =>
+                      changeHistorySortBy(
+                        event.target.value as HistorySortField
+                      )
+                    }
+                    disabled={historyLoading}
+                  >
+                    <option value="new_dateofaction">
+                      Action Date
+                    </option>
+
+                    <option value="new_description">
+                      Description
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Sort Order</span>
+
+                  <select
+                    value={historySortOrder}
+                    onChange={(event) =>
+                      changeHistorySortOrder(
+                        event.target.value as HistorySortOrder
+                      )
+                    }
+                    disabled={historyLoading}
+                  >
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                  </select>
+                </label>
+              </div>
+
+              {historyError && (
+                <div className="history-error">
+                  {historyError}
+                </div>
+              )}
+
+              <div className="history-table-container">
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Action Date</th>
+                      <th>Description</th>
+                      <th>Action Detail</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {historyLoading ? (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="history-message-cell"
+                        >
+                          Loading history...
+                        </td>
+                      </tr>
+                    ) : historyItems.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="history-message-cell"
+                        >
+                          No history records were found.
+                        </td>
+                      </tr>
+                    ) : (
+                      historyItems.map((item, index) => (
+                        <tr
+                          key={`${item.new_dateofaction}-${item.new_description}-${index}`}
+                        >
+                          <td>{item.new_dateofaction || "—"}</td>
+
+                          <td>{item.new_description || "—"}</td>
+
+                          <td>
+                            {item.new_actiondetail?.trim() || "—"}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="history-dialog-footer">
+                <div className="history-record-count">
+                  {historyTotalRecords === 1
+                    ? "1 record"
+                    : `${historyTotalRecords} records`}
+                </div>
+
+                <div className="history-pagination">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      changeHistoryPage(historyPageNumber - 1)
+                    }
+                    disabled={
+                      historyLoading || historyPageNumber <= 1
+                    }
+                  >
+                    Previous
+                  </button>
+
+                  <span>
+                    Page {historyPageNumber} of{" "}
+                    {historyTotalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      changeHistoryPage(historyPageNumber + 1)
+                    }
+                    disabled={
+                      historyLoading ||
+                      historyPageNumber >= historyTotalPages
+                    }
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
           </div>

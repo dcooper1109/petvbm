@@ -525,8 +525,12 @@ body {
 }
 
 .manage-modal {
+  position: relative;
   width: 100%;
   max-width: 620px;
+  max-height: 90vh;          /* Don't let the dialog exceed the viewport */
+  overflow-y: auto;          /* Show a vertical scrollbar when needed */
+
   background: #ffffff;
   border-radius: 18px;
   padding: 26px;
@@ -606,11 +610,6 @@ body {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
-}
-
-
-.manage-modal {
-  position: relative;
 }
 
 .dialog-close {

@@ -60,6 +60,11 @@ type HistorySortField =
 
 type HistorySortOrder = "asc" | "desc";
 
+type SubscriptionOption = {
+  subscriptionType: string;
+  subscriptionPrice: number;
+};
+
 function CustomSelect({
   label,
   value,
@@ -201,6 +206,179 @@ function getApiMessage(value: any): string {
   return String(value);
 }
 
+const faqs = [
+  {
+    question: "What are the key benefits of our discount program?",
+    answer: (
+      <>
+        <p>
+          Transparent prices for pet parents. Save up to 50% compared with
+          veterinary clinic prices.
+        </p>
+        <p>
+          PetVantageRx works with reputable pet pharmacies that negotiate
+          directly with manufacturers, allowing us to pass savings on to pet
+          parents, plus an additional discount.
+        </p>
+        <p>
+          Members receive savings on prescription pet medications, trusted
+          human equivalents, vaccines, supplements, flea and tick treatments,
+          heartworm prevention, and other everyday pet care products.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "Are your products the same ones sold at my veterinarian’s office?",
+    answer: (
+      <>
+        <p>
+          Yes. The medications and products available through PetVantageRx are
+          the same trusted products available through many veterinary clinics,
+          at lower prices.
+        </p>
+        <p>
+          Our pharmacy partners are fully accredited and source products from
+          manufacturers or licensed distributors. Products are stored and
+          handled according to applicable standards.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "What does the subscription cost?",
+    answer: (
+      <p>
+        The subscription costs $4.99 per month for your first pet and $3.99 per
+        month for each additional pet.
+      </p>
+    ),
+  },
+  {
+    question: "How do I enroll?",
+    answer: (
+      <>
+        <p>To enroll:</p>
+        <ul>
+          <li>Visit PetVantageRx.com.</li>
+          <li>Register yourself and your pet or pets.</li>
+          <li>Complete your subscription purchase through the member portal.</li>
+        </ul>
+        <p>
+          Once payment is processed, you and your pet or pets will be enrolled
+          in the program.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "Will my subscription automatically renew each month or year?",
+    answer: (
+      <>
+        <p>
+          Yes. You can choose a monthly or annual subscription. You will be
+          charged for the first term when you sign up, and the subscription will
+          automatically renew using the payment method on file.
+        </p>
+        <p>
+          To avoid the next charge, cancel before the current subscription term
+          ends. After cancellation, benefits continue through the end of the
+          paid term.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "Are there any additional savings opportunities?",
+    answer: (
+      <>
+        <p>
+          Yes. Eligible products may qualify for additional savings through a
+          pharmacy partner’s Auto-Ship program.
+        </p>
+        <ul>
+          <li>5% off prescription medications</li>
+          <li>10% off over-the-counter medications</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    question: "Once I subscribe, how do I access the program?",
+    answer: (
+      <>
+        <p>
+          After your subscription purchase, you will receive an email and text
+          message confirming your subscription and discount code.
+        </p>
+        <p>
+          You will then be directed to the medication and product search page,
+          where you can find the products prescribed for your pet and access
+          discounted pricing.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "Can I use my discount code directly on a pharmacy partner’s website?",
+    answer: (
+      <>
+        <p>
+          No. You must access the pharmacy partner through the PetVantageRx Pet
+          Parent Portal, Welcome Email, or Welcome Text so that your discount is
+          applied correctly.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "What is your refund and cancellation policy?",
+    answer: (
+      <>
+        <p>
+          You can cancel at any time by logging into your Pet Parent account and
+          selecting Cancel Subscription. Subscription fees are non-refundable
+          and are not prorated except where the Terms and Conditions state
+          otherwise.
+        </p>
+        <p>
+          After cancellation, benefits remain available through the end of the
+          current paid subscription term.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: "I forgot my password. What should I do?",
+    answer: (
+      <p>
+        Go to PetVantageRx.com, select Sign In, and then select Forgot Password.
+        Enter the email address associated with your account to receive reset
+        instructions.
+      </p>
+    ),
+  },
+  {
+    question: "How do I change my password?",
+    answer: (
+      <p>
+        After signing in, go to Account & Orders and select Profile. You can
+        update and save your password there.
+      </p>
+    ),
+  },
+  {
+    question: "Where can I see the subscription Terms and Conditions?",
+    answer: (
+      <p>
+        The PetVantageRx Subscription Plan Terms and Conditions are displayed
+        below as part of registration and can also be published at
+        PetVantageRx.com/terms.
+      </p>
+    ),
+  },
+];
+
 export default function Home() {
   const [lastName, setLastName] = useState("");
   const [medication, setMedication] = useState("");
@@ -222,6 +400,7 @@ export default function Home() {
   const [memberEmail, setMemberEmail] = useState("");
   const [memberMobilePhone, setMemberMobilePhone] = useState("");
 
+  const [faqOpen, setFaqOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [manageFirstName, setManageFirstName] = useState("");
   const [manageLastName, setManageLastName] = useState("");
@@ -291,6 +470,111 @@ export default function Home() {
 
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
+
+  const [cancelReason, setCancelReason] = useState("");
+
+  const cancellationReasons = [
+    "Found Better Medication Pricing Elsewhere",
+    "My Pet No Longer Requires Medication",
+    "No Longer Have Pet",
+    "Only Needed for a One Time Issue",
+    "Product(s) Needed Frequently Out of Stock",
+    "Replacing with Pet Insurance",
+    "Shipping Takes Too Long",
+    "Subscription Too Expensive",
+    "Unable to Find Medication/Product Needed",
+    "Website is Too Difficult",
+    "Other",
+  ];
+
+  const [subscriptionOptions, setSubscriptionOptions] =
+    useState<SubscriptionOption[]>([]);
+
+  const [loadingPrices, setLoadingPrices] = useState(false);
+  const [priceError, setPriceError] = useState("");
+
+  const [confirmNewRate, setConfirmNewRate] = useState(false);
+
+  const currentSubscriptionIndex = subscriptionOptions.findIndex(
+    (option) => option.subscriptionType === subscriptionType
+  );
+
+  const currentSubscriptionOption =
+    currentSubscriptionIndex >= 0
+      ? subscriptionOptions[currentSubscriptionIndex]
+      : null;
+
+  const previousSubscriptionOption =
+    currentSubscriptionIndex > 0
+      ? subscriptionOptions[currentSubscriptionIndex - 1]
+      : null;
+
+  const nextSubscriptionOption =
+    currentSubscriptionIndex >= 0 &&
+    currentSubscriptionIndex < subscriptionOptions.length - 1
+      ? subscriptionOptions[currentSubscriptionIndex + 1]
+      : null;
+
+  // At the highest tier, adding another pet keeps the current subscription rate.
+  const addPetSubscriptionOption =
+    nextSubscriptionOption || currentSubscriptionOption;
+
+
+  async function loadSubscriptionPrices(currentPartnerName: string) {
+    if (!currentPartnerName.trim()) return;
+
+    try {
+      setLoadingPrices(true);
+      setPriceError("");
+
+      const response = await fetch("/api/getprice", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          partnerName: currentPartnerName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (
+        !response.ok ||
+        data?.success !== true ||
+        !Array.isArray(data?.subscriptionOptions)
+      ) {
+        throw new Error(
+          data?.message || "Unable to retrieve subscription pricing."
+        );
+      }
+
+      const options: SubscriptionOption[] = data.subscriptionOptions
+        .filter(
+          (option: any) =>
+            option?.subscriptionType &&
+            option?.subscriptionPrice !== null &&
+            option?.subscriptionPrice !== undefined
+        )
+        .map((option: any) => ({
+          subscriptionType: String(option.subscriptionType).trim(),
+          subscriptionPrice: Number(option.subscriptionPrice),
+        }));
+
+      setSubscriptionOptions(options);
+    } catch (error) {
+      console.error("Subscription pricing error:", error);
+      setSubscriptionOptions([]);
+
+      setPriceError(
+        error instanceof Error
+          ? error.message
+          : "Unable to retrieve subscription pricing."
+      );
+    } finally {
+      setLoadingPrices(false);
+    }
+  }
 
   async function loadHistory(
     pageNumber = historyPageNumber,
@@ -483,7 +767,10 @@ export default function Home() {
           const oauthLastName = loginBody.lastName || "";
           const oauthPetSubID = loginBody.petSubID || "";
 
-          setPartnerName(loginBody.partnerName || "");
+          const oauthPartnerName = loginBody.partnerName || "";
+          setPartnerName(oauthPartnerName);
+          await loadSubscriptionPrices(oauthPartnerName);
+
           setFirstName(loginBody.firstName || "");
           setLastName(oauthLastName);
           setMemberMobilePhone(loginBody.mobilePhone || "");
@@ -835,6 +1122,14 @@ export default function Home() {
           <button
             type="button"
             className="contact-button"
+            onClick={() => setFaqOpen(true)}
+          >
+            ❓ FAQ
+          </button>
+
+          <button
+            type="button"
+            className="contact-button"
             onClick={() => {
               setManageFirstName(firstName || "");
               setManageLastName(lastName || "");
@@ -848,17 +1143,17 @@ export default function Home() {
               );
 
               setCancelServiceChecked(false);
+              setCancelReason("");
               setRemovePetChecked(false);
               setAddPetChecked(false);
               setPetsToRemove([]);
-
               setNewPetName("");
               setNewPetSpecies("");
               setNewPetBreed("");
               setNewPetSex("");
-
               setManageMessage("");
               setManageOpen(true);
+              setConfirmNewRate(false);
             }}
           >
             ⚙ Manage Subscr.
@@ -1058,6 +1353,86 @@ export default function Home() {
          </section>
         )}
 
+        {faqOpen && (
+          <div
+            className="modal-overlay"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setFaqOpen(false);
+              }
+            }}
+          >
+            <div
+              className="manage-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="faq-dialog-title"
+              style={{ maxHeight: "85vh", overflowY: "auto" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 16,
+                  marginBottom: 18,
+                }}
+              >
+                <h2 id="faq-dialog-title" className="product-title" style={{ margin: 0 }}>
+                  Frequently Asked Questions
+                </h2>
+
+                <button
+                  type="button"
+                  className="dialog-close"
+                  onClick={() => setFaqOpen(false)}
+                  aria-label="Close Frequently Asked Questions"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gap: 10 }}>
+                {faqs.map((faq) => (
+                  <details
+                    key={faq.question}
+                    style={{
+                      border: "1px solid #d9e2df",
+                      borderRadius: 10,
+                      backgroundColor: "#fbfdfc",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <summary
+                      style={{
+                        padding: "14px 16px",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        color: navy,
+                        fontSize: 15,
+                      }}
+                    >
+                      {faq.question}
+                    </summary>
+
+                    <div
+                      style={{
+                        padding: "0 16px 14px",
+                        color: "#374151",
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {faq.answer}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {manageOpen && (
           <div className="modal-overlay">
             <div className="manage-modal">
@@ -1142,8 +1517,15 @@ export default function Home() {
                     disabled={removePetChecked || addPetChecked}
                     onChange={(e) => {
                       setManageMessage("");
-                      setCancelServiceChecked(e.target.checked);
-                      if (e.target.checked) {
+                      const checked = e.target.checked;
+                      setCancelServiceChecked(checked);
+
+                      if (!checked) {
+                        setCancelReason("");
+                        setConfirmCancelService(false);
+                      }
+
+                      if (checked) {
                         setRemovePetChecked(false);
                         setAddPetChecked(false);
                         setConfirmCancelService(false);
@@ -1161,6 +1543,7 @@ export default function Home() {
                     disabled={cancelServiceChecked || addPetChecked}
                     onChange={(e) => {
                       setManageMessage("");
+                      setConfirmNewRate(false);
 
                       if (pets.length <= 1) {
                         setRemovePetChecked(false);
@@ -1170,11 +1553,15 @@ export default function Home() {
                         return;
                       }
 
-                      setRemovePetChecked(e.target.checked);
-                        if (e.target.checked) {
-                          setCancelServiceChecked(false);
-                          setAddPetChecked(false);
-                        }
+                      const checked = e.target.checked;
+
+                      setRemovePetChecked(checked);
+                      if (checked) {
+                        setCancelServiceChecked(false);
+                        setAddPetChecked(false);
+                      } else {
+                        setPetsToRemove([]);
+                      }
                     }}
                   />
                   Remove Pet
@@ -1187,8 +1574,12 @@ export default function Home() {
                     disabled={cancelServiceChecked || removePetChecked}
                     onChange={(e) => {
                       setManageMessage("");
-                      setAddPetChecked(e.target.checked);
-                      if (e.target.checked) {
+                      setConfirmNewRate(false);
+                      
+                      const checked = e.target.checked;
+
+                      setAddPetChecked(checked);
+                      if (checked) {
                         setCancelServiceChecked(false);
                         setRemovePetChecked(false);
                         setPetsToRemove([]);
@@ -1210,8 +1601,11 @@ export default function Home() {
                           type="checkbox"
                           checked={petsToRemove.includes(pet.petName)}
                           onChange={(e) => {
+                            setConfirmNewRate(false);
+
                             if (e.target.checked) {
-                              setPetsToRemove((prev) => [...prev, pet.petName]);
+                              // Only one pet may be removed at a time.
+                              setPetsToRemove([pet.petName]);
                             } else {
                               setPetsToRemove((prev) =>
                                 prev.filter((name) => name !== pet.petName)
@@ -1277,8 +1671,155 @@ export default function Home() {
                 </div>
               )}
 
+              {addPetChecked && addPetSubscriptionOption && (
+                <div className="manage-subsection">
+                  <h3>New Subscription Rate</h3>
+
+                  <div className="rate-change-box">
+                    <div>
+                      <strong>Current Subscription:</strong>{" "}
+                      {currentSubscriptionOption?.subscriptionType || subscriptionType}
+                      {currentSubscriptionOption && (
+                        <>
+                          {" — "}
+                          {currentSubscriptionOption.subscriptionPrice.toLocaleString(
+                            "en-US",
+                            {
+                              style: "currency",
+                              currency: "USD",
+                            }
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    <div>
+                      <strong>New Subscription:</strong>{" "}
+                      {addPetSubscriptionOption.subscriptionType}
+                      {" — "}
+                      {addPetSubscriptionOption.subscriptionPrice.toLocaleString(
+                        "en-US",
+                        {
+                          style: "currency",
+                          currency: "USD",
+                        }
+                      )}
+                    </div>
+
+                    <label className="confirm-cancel-label">
+                      <input
+                        type="checkbox"
+                        checked={confirmNewRate}
+                        onChange={(e) => setConfirmNewRate(e.target.checked)}
+                      />
+
+                      <span>
+                        I agree to the new subscription rate of{" "}
+                        {addPetSubscriptionOption.subscriptionPrice.toLocaleString(
+                          "en-US",
+                          {
+                            style: "currency",
+                            currency: "USD",
+                          }
+                        )}
+                        .
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {removePetChecked && !previousSubscriptionOption && (
+                <div className="submit-message error-text">
+                  A lower subscription option is not available.
+                </div>
+              )}
+
+              {removePetChecked && previousSubscriptionOption && (
+                <div className="manage-subsection">
+                  <h3>New Subscription Rate</h3>
+
+                  <div className="rate-change-box">
+                    <div>
+                      <strong>Current Subscription:</strong>{" "}
+                      {currentSubscriptionOption?.subscriptionType || subscriptionType}
+                      {currentSubscriptionOption && (
+                        <>
+                          {" — "}
+                          {currentSubscriptionOption.subscriptionPrice.toLocaleString(
+                            "en-US",
+                            {
+                              style: "currency",
+                              currency: "USD",
+                            }
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    <div>
+                      <strong>New Subscription:</strong>{" "}
+                      {previousSubscriptionOption.subscriptionType}
+                      {" — "}
+                      {previousSubscriptionOption.subscriptionPrice.toLocaleString(
+                        "en-US",
+                        {
+                          style: "currency",
+                          currency: "USD",
+                        }
+                      )}
+                    </div>
+
+                    <label className="confirm-cancel-label">
+                      <input
+                        type="checkbox"
+                        checked={confirmNewRate}
+                        onChange={(e) => setConfirmNewRate(e.target.checked)}
+                      />
+
+                      <span>
+                        I agree to the new subscription rate of{" "}
+                        {previousSubscriptionOption.subscriptionPrice.toLocaleString(
+                          "en-US",
+                          {
+                            style: "currency",
+                            currency: "USD",
+                          }
+                        )}
+                        .
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {manageMessage && (
                 <div className="submit-message">{manageMessage}</div>
+              )}
+
+              {cancelServiceChecked && (
+                <div className="manage-subsection">
+                  <h3>Cancellation Reason</h3>
+
+                  <div className="field-group">
+                    <label>Reason *</label>
+                    <select
+                      value={cancelReason}
+                      onChange={(e) => {
+                        setManageMessage("");
+                        setCancelReason(e.target.value);
+                      }}
+                      className="input-short"
+                    >
+                      <option value="">Select a cancellation reason</option>
+                      {cancellationReasons.map((reason) => (
+                        <option key={reason} value={reason}>
+                          {reason}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               )}
 
                {cancelServiceChecked && (
@@ -1309,11 +1850,36 @@ export default function Home() {
                 <button
                   type="button"
                   className="gold-button"
-                  disabled={cancelServiceChecked && !confirmCancelService}
+                  disabled={
+                    (cancelServiceChecked &&
+                      (!confirmCancelService || !cancelReason.trim())) ||
+                    (removePetChecked &&
+                      (!confirmNewRate ||
+                        !previousSubscriptionOption ||
+                        petsToRemove.length !== 1)) ||
+                    (addPetChecked &&
+                      (!confirmNewRate ||
+                        !addPetSubscriptionOption ||
+                        !newPetName.trim() ||
+                        !newPetSpecies.trim() ||
+                        !newPetSex.trim()))
+                  }
                   onClick={async () => {
                     setManageMessage("");
 
                     if (cancelServiceChecked) {
+                      if (!cancelReason.trim()) {
+                        setManageMessage("Please select a cancellation reason.");
+                        return;
+                      }
+
+                      if (!confirmCancelService) {
+                        setManageMessage(
+                          "Please confirm that you want to cancel your subscription."
+                        );
+                        return;
+                      }
+
                       try {
                         setManageMessage("Cancelling service...");
 
@@ -1329,6 +1895,7 @@ export default function Home() {
                           petSex: "",
 
                           cancelService: "Y",
+                          reason: cancelReason,
                         };
 
                         const res = await fetch("/api/pet-service", {
@@ -1379,6 +1946,25 @@ export default function Home() {
                     }
 
                     if (removePetChecked) {
+                      if (petsToRemove.length !== 1) {
+                        setManageMessage("Please select one pet to remove.");
+                        return;
+                      }
+
+                      if (!previousSubscriptionOption) {
+                        setManageMessage(
+                          "A lower subscription option is not available."
+                        );
+                        return;
+                      }
+
+                      if (!confirmNewRate) {
+                        setManageMessage(
+                          "Please agree to the new subscription rate."
+                        );
+                        return;
+                      }
+
                       try {
                         setManageMessage("Removing pet...");
 
@@ -1388,7 +1974,10 @@ export default function Home() {
                           memberFirst: firstName,
                           memberLast: lastName,
                           memberSubID: petSubID,
-                          subscriptionType: subscriptionType,
+                          subscriptionType:
+                            previousSubscriptionOption.subscriptionType,
+                          subscriptionPrice:
+                            previousSubscriptionOption.subscriptionPrice,
 
                           petName: selectedPetName,
                           petSpecies: "",
@@ -1461,8 +2050,28 @@ export default function Home() {
                       try {
                         setManageMessage("");
 
-                        if (!newPetName || !newPetSpecies || !newPetSex) {
-                          setManageMessage("Pet Name, Pet Species, and Pet Sex are required.");
+                        if (
+                          !newPetName.trim() ||
+                          !newPetSpecies.trim() ||
+                          !newPetSex.trim()
+                        ) {
+                          setManageMessage(
+                            "Pet Name, Pet Species, and Pet Sex are required."
+                          );
+                          return;
+                        }
+
+                        if (!addPetSubscriptionOption) {
+                          setManageMessage(
+                            "A subscription rate is not available for adding a pet."
+                          );
+                          return;
+                        }
+
+                        if (!confirmNewRate) {
+                          setManageMessage(
+                            "Please agree to the new subscription rate."
+                          );
                           return;
                         }
 
@@ -1472,7 +2081,10 @@ export default function Home() {
                           memberFirst: firstName,
                           memberLast: lastName,
                           memberSubID: petSubID,
-                          subscriptionType: subscriptionType,
+                          subscriptionType:
+                            addPetSubscriptionOption.subscriptionType,
+                          subscriptionPrice:
+                            addPetSubscriptionOption.subscriptionPrice,
 
                           petName: newPetName,
                           petSpecies: newPetSpecies,
