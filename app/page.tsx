@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { track } from "@vercel/analytics";
+import { useRouter } from "next/navigation";
 
 type CustomSelectProps = {
   label: string;
@@ -472,6 +473,8 @@ export default function Home() {
   const [historyError, setHistoryError] = useState("");
 
   const [cancelReason, setCancelReason] = useState("");
+
+  const router = useRouter();
 
   const cancellationReasons = [
     "Found Better Medication Pricing Elsewhere",
@@ -1119,13 +1122,13 @@ export default function Home() {
 
         <div className="top-links">
 
-          <button
-            type="button"
-            className="contact-button"
-            onClick={() => setFaqOpen(true)}
-          >
-            ❓ FAQ
-          </button>
+<button
+  type="button"
+  className="contact-button"
+  onClick={() => router.push("/manage-subscription")}
+>
+  ⚙ Manage Subscr.
+</button>
 
           <button
             type="button"
@@ -1161,16 +1164,12 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={openHistoryDialog}
             className="contact-button"
+            onClick={() => setFaqOpen(true)}
           >
-            🕘 History
+            ❓ FAQ
           </button>
 
-          <a href="/auth/logout" className="contact-button">
-            🔓 Log Out
-          </a>
-                    
           <a
             className="contact-button"
             href={`mailto:d2csupport@petvantagerx.com?subject=${encodeURIComponent(
@@ -1186,6 +1185,19 @@ export default function Home() {
           >
             📧 Contact Us
           </a>
+
+          <button
+            type="button"
+            onClick={openHistoryDialog}
+            className="contact-button"
+          >
+            🕘 History
+          </button>
+
+          <a href="/auth/logout" className="contact-button">
+            🔓 Log Out
+          </a>
+                    
         </div>
 
         <div className="gold-line" />
