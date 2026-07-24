@@ -449,6 +449,9 @@ export default function Home() {
 
   const router = useRouter();
 
+const [loadingPrices, setLoadingPrices] = useState(false);
+const [priceError, setPriceError] = useState("");
+  
   const [subscriptionOptions, setSubscriptionOptions] =
     useState<SubscriptionOption[]>([]);
 
