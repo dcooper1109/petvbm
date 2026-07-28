@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -33,6 +34,7 @@ type MemberData = {
   email: string;
   subscriptionType?: string;
   subscriptionStatus?: string;
+  stripeCustomerId?: string;
   pets: Pet[];
 };
 
@@ -222,6 +224,8 @@ export default function Home() {
   const [subscriptionStatus, setSubscriptionStatus] = useState("");
   const [memberEmail, setMemberEmail] = useState("");
   const [memberMobilePhone, setMemberMobilePhone] = useState("");
+  const [stripeCustomerId, setStripeCustomerId] = useState("");
+  const [openingBillingPortal, setOpeningBillingPortal] = useState(false);
 const [partnerName, setPartnerName] = useState("");
 
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -557,6 +561,7 @@ const [priceError, setPriceError] = useState("");
           setFirstName(loginBody.firstName || "");
           setLastName(oauthLastName);
           setMemberMobilePhone(loginBody.mobilePhone || "");
+          setStripeCustomerId(loginBody.stripeCustomerId || "");
           setPetSubID(oauthPetSubID);
 
           setAccessAllowed(true);
@@ -656,6 +661,7 @@ const [priceError, setPriceError] = useState("");
       setLastName(lookupLastName || "");
       setMemberEmail(member?.email || "");
       setMemberMobilePhone(member?.mobile || "");
+      setStripeCustomerId(member?.stripeCustomerId || "");
       setSubscriptionType(member?.subscriptionType || "");
       setSubscriptionStatus(member?.status || "");
 
@@ -684,6 +690,86 @@ const [priceError, setPriceError] = useState("");
       setIsError(true);
     } finally {
       setLoadingLookup(false);
+    }
+  }
+
+  async function openStripePaymentMethodPortal() {
+    setIsError(false);
+
+    if (!stripeCustomerId.trim()) {
+      setStatus(
+        "Unable to open payment settings because the Stripe Customer ID was not returned."
+      );
+      setIsError(true);
+      return;
+    }
+
+    if (!petSubID.trim()) {
+      setStatus(
+        "Unable to open payment settings because the Subscription ID is missing."
+      );
+      setIsError(true);
+      return;
+    }
+
+    try {
+      setOpeningBillingPortal(true);
+      setStatus("Opening secure Stripe payment settings...");
+
+console.log("Opening Stripe portal for:", {
+  stripeCustomerId,
+  memberSubID: petSubID,
+  memberEmail,
+});
+
+      const response = await fetch(
+        "/api/stripe/create-payment-method-portal",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            stripeCustomerId,
+            memberSubID: petSubID,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+console.log(
+  "Stripe portal API response:",
+  data
+);
+
+      if (!response.ok || data?.success !== true || !data?.url) {
+        throw new Error(
+          data?.message ||
+            "Unable to open Stripe payment settings."
+        );
+      }
+
+console.log(
+  "Redirecting to Stripe portal:",
+  {
+    url: data.url,
+    debug: data.debug,
+  }
+);
+
+      window.location.assign(data.url);
+    } catch (error) {
+      console.error("Stripe portal error:", error);
+
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Unable to open Stripe payment settings."
+      );
+      setIsError(true);
+    } finally {
+      setOpeningBillingPortal(false);
     }
   }
 
@@ -828,8 +914,24 @@ const [priceError, setPriceError] = useState("");
           className="contact-button"
           onClick={() => router.push("/manage-subscription")}
         >
-          ⚙ Manage Subscr.
+          ⚙ Account
         </button>
+
+          <button
+            type="button"
+            className="contact-button"
+            onClick={openStripePaymentMethodPortal}
+            disabled={openingBillingPortal || !stripeCustomerId}
+            title={
+              stripeCustomerId
+                ? "Update credit card securely through Stripe"
+                : "Stripe Customer ID is unavailable"
+            }
+          >
+            {openingBillingPortal
+              ? "Opening Payment..."
+              : "💳 Update Card"}
+          </button>
 
           <button
             type="button"

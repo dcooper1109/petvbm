@@ -260,7 +260,7 @@ export default function ManageSubscriptionPage() {
           loadSubscriptionPrices(oauthPartnerName),
         ]);
       } catch (error) {
-        console.error("Manage subscription access error:", error);
+        console.error("Manage Account access error:", error);
 
         setAccessAllowed(false);
         setAccessMessage(
@@ -761,8 +761,8 @@ console.log("Partner Name:", partnerName);
     return (
       <main className="manage-page">
         <div className="manage-page-card">
-          <h1>Manage Subscription</h1>
-          <p>Loading subscription information...</p>
+          <h1>Manage Account</h1>
+          <p>Loading account information...</p>
         </div>
       </main>
     );
@@ -772,7 +772,7 @@ console.log("Partner Name:", partnerName);
     return (
       <main className="manage-page">
         <div className="manage-page-card">
-          <h1>Manage Subscription</h1>
+          <h1>Manage Account</h1>
 
           <div className="submit-message error-text">
             {accessMessage}
@@ -799,7 +799,7 @@ console.log("Partner Name:", partnerName);
 
             <div>
               <p className="manage-eyebrow">Pet Parent Portal</p>
-              <h1 className="product-title">Manage Subscription</h1>
+              <h1 className="product-title">Manage Account</h1>
               <p className="manage-page-subtitle">
                 Update member information, manage pets, or change your subscription.
               </p>
