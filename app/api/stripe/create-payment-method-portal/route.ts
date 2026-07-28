@@ -70,21 +70,6 @@ export async function POST(req: Request) {
       );
     }
 
-    /*
-     * Identify the Stripe account associated with the
-     * secret key used by this application.
-     */
-    const stripeAccount =
-      await stripe.accounts.retrieve();
-
-    console.log("Stripe account diagnostics:", {
-      stripeAccountId: stripeAccount.id,
-      stripeAccountEmail: stripeAccount.email,
-      stripeAccountBusinessName:
-        stripeAccount.business_profile?.name,
-      stripeAccountCountry: stripeAccount.country,
-    });
-
     const customer =
       await stripe.customers.retrieve(
         requestedCustomerId,
@@ -199,8 +184,6 @@ export async function POST(req: Request) {
             session.user.sub,
           auth0Email:
             session.user.email,
-          stripeAccountId:
-            stripeAccount.id,
           stripeCustomerId:
             customer.id,
           stripeCustomerEmail:
@@ -258,8 +241,6 @@ export async function POST(req: Request) {
     console.log(
       "Verified Stripe portal customer:",
       {
-        stripeAccountId:
-          stripeAccount.id,
         customerId:
           customer.id,
         customerEmail:
@@ -323,8 +304,6 @@ export async function POST(req: Request) {
         expectedCustomerEmail:
           customer.email,
 
-        stripeAccountId:
-          stripeAccount.id,
 
         livemode:
           portalSession.livemode,
@@ -368,8 +347,6 @@ export async function POST(req: Request) {
       url: portalSession.url,
 
       debug: {
-        stripeAccountId:
-          stripeAccount.id,
 
         portalSessionId:
           portalSession.id,
