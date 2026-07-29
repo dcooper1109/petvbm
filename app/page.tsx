@@ -226,7 +226,8 @@ export default function Home() {
   const [memberMobilePhone, setMemberMobilePhone] = useState("");
   const [stripeCustomerId, setStripeCustomerId] = useState("");
   const [openingBillingPortal, setOpeningBillingPortal] = useState(false);
-const [partnerName, setPartnerName] = useState("");
+  const [partnerName, setPartnerName] = useState("");
+  const [faqOpen, setFaqOpen] = useState(false);
 
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [loadingLookup, setLoadingLookup] = useState(false);
