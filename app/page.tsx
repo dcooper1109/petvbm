@@ -938,13 +938,15 @@ console.log(
               : "💳 Update Payment"}
           </button>
 
-          <button
-            type="button"
-            className="contact-button"
-            onClick={() => router.push("/faq")}
-          >
-            ❓ FAQ
-          </button>
+          {partnerName === "Direct Registration" ? null : (
+            <button
+              type="button"
+              className="contact-button"
+              onClick={() => setFaqOpen(true)}
+            >
+              ❓ FAQ
+            </button>
+          )}
 
           <a
             className="contact-button"
