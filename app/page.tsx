@@ -1,9 +1,9 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { track } from "@vercel/analytics";
 import { useRouter } from "next/navigation";
+import { partnerFaqs } from "./faq/data";
 
 type CustomSelectProps = {
   label: string;
@@ -204,6 +204,12 @@ function getApiMessage(value: any): string {
   return String(value);
 }
 
+function normalizePartnerName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
 export default function Home() {
   const [lastName, setLastName] = useState("");
   const [medication, setMedication] = useState("");
@@ -227,7 +233,15 @@ export default function Home() {
   const [stripeCustomerId, setStripeCustomerId] = useState("");
   const [openingBillingPortal, setOpeningBillingPortal] = useState(false);
   const [partnerName, setPartnerName] = useState("");
-  const [faqOpen, setFaqOpen] = useState(false);
+
+  const normalizedPartnerName = normalizePartnerName(partnerName);
+  const isDirectRegistration =
+    normalizedPartnerName === "directregistration";
+  const currentPartnerFaqs =
+    partnerFaqs[normalizedPartnerName] || [];
+  const showFaqButton =
+    !isDirectRegistration &&
+    currentPartnerFaqs.length > 0;
 
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [loadingLookup, setLoadingLookup] = useState(false);
@@ -939,11 +953,15 @@ console.log(
               : "💳 Update Payment"}
           </button>
 
-          {partnerName === "Direct Registration" ? null : (
+          {showFaqButton && (
             <button
               type="button"
               className="contact-button"
-              onClick={() => setFaqOpen(true)}
+              onClick={() =>
+                router.push(
+                  `/faq?partner=${encodeURIComponent(partnerName)}`
+                )
+              }
             >
               ❓ FAQ
             </button>
