@@ -558,6 +558,11 @@ const [priceError, setPriceError] = useState("");
           const oauthPartnerName = loginBody.partnerName || "";
           setPartnerName(oauthPartnerName);
           
+
+console.log("OAuth Partner Name:", JSON.stringify(oauthPartnerName));
+
+
+
           setFirstName(loginBody.firstName || "");
           setLastName(oauthLastName);
           setMemberMobilePhone(loginBody.mobilePhone || "");

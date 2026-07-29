@@ -1007,15 +1007,20 @@ const [priceError, setPriceError] = useState("");
           ⚙ Manage Subscr.
         </button>
 
-        {partnerName !== "Direct Registration" && (
-          <button
-            type="button"
-            className="contact-button"
-            onClick={() => setFaqOpen(true)}
-          >
-            ❓ FAQ
-          </button>
-        )}
+<div style={{ color: "red", fontWeight: 700 }}>
+  Partner: [{partnerName}] — Show FAQ:{" "}
+  {String(partnerName !== "Direct Registration")}
+</div>
+
+{partnerName === "Direct Registration" ? null : (
+  <button
+    type="button"
+    className="contact-button"
+    onClick={() => setFaqOpen(true)}
+  >
+    ❓ FAQ
+  </button>
+)}
 
           <a
             className="contact-button"
