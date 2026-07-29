@@ -1007,6 +1007,7 @@ const [priceError, setPriceError] = useState("");
           ⚙ Manage Subscr.
         </button>
 
+        {partnerName !== "Direct Registration" && (
           <button
             type="button"
             className="contact-button"
@@ -1014,6 +1015,7 @@ const [priceError, setPriceError] = useState("");
           >
             ❓ FAQ
           </button>
+        )}
 
           <a
             className="contact-button"

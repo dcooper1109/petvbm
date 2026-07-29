@@ -930,7 +930,7 @@ console.log(
           >
             {openingBillingPortal
               ? "Opening Payment..."
-              : "💳 Update Card"}
+              : "💳 Update Payment"}
           </button>
 
           <button
