@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -12,13 +13,22 @@ function normalizePartnerName(value: string) {
 }
 
 export default function FAQPage() {
+  return (
+    <Suspense fallback={<FAQLoading />}>
+      <FAQContent />
+    </Suspense>
+  );
+}
+
+function FAQContent() {
   const searchParams = useSearchParams();
 
   const partnerName = searchParams.get("partner") || "";
   const normalizedPartnerName = normalizePartnerName(partnerName);
 
-  const currentPartnerFaqs = partnerFaqs[normalizedPartnerName] || [];
-  
+  const currentPartnerFaqs =
+    partnerFaqs[normalizedPartnerName] || [];
+
   return (
     <main style={pageStyle}>
       <div style={shellStyle}>
@@ -32,7 +42,10 @@ export default function FAQPage() {
             unoptimized
             style={{ height: "auto" }}
           />
-          <h1 style={titleStyle}>Frequently Asked Questions</h1>
+
+          <h1 style={titleStyle}>
+            Frequently Asked Questions
+          </h1>
         </header>
 
         <div style={accentLineStyle} />
@@ -47,7 +60,10 @@ export default function FAQPage() {
           <div style={faqListStyle}>
             {currentPartnerFaqs.length > 0 ? (
               currentPartnerFaqs.map((faq) => (
-                <details key={faq.question} style={faqItemStyle}>
+                <details
+                  key={faq.question}
+                  style={faqItemStyle}
+                >
                   <summary style={faqQuestionStyle}>
                     {faq.question}
                   </summary>
@@ -63,6 +79,18 @@ export default function FAQPage() {
               </p>
             )}
           </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function FAQLoading() {
+  return (
+    <main style={pageStyle}>
+      <div style={shellStyle}>
+        <section style={cardStyle}>
+          Loading frequently asked questions...
         </section>
       </div>
     </main>
