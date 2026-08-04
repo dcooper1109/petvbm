@@ -234,6 +234,13 @@ export default function Home() {
   const [openingBillingPortal, setOpeningBillingPortal] = useState(false);
   const [partnerName, setPartnerName] = useState("");
 
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactSubject, setContactSubject] = useState("");
+  const [contactDescription, setContactDescription] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactIsError, setContactIsError] = useState(false);
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+
   const normalizedPartnerName = normalizePartnerName(partnerName);
   const isDirectRegistration =
     normalizedPartnerName === "directregistration";
@@ -713,6 +720,131 @@ console.log("OAuth Partner Name:", JSON.stringify(oauthPartnerName));
     }
   }
 
+  function openContactDialog() {
+    setContactSubject("");
+    setContactDescription("");
+    setContactMessage("");
+    setContactIsError(false);
+    setContactOpen(true);
+  }
+
+  function closeContactDialog() {
+    if (contactSubmitting) return;
+
+    setContactOpen(false);
+    setContactMessage("");
+    setContactIsError(false);
+  }
+
+  async function handleContactSubmit(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setContactMessage("");
+    setContactIsError(false);
+
+    if (!contactSubject) {
+      setContactIsError(true);
+      setContactMessage("Please select a subject.");
+      return;
+    }
+
+    if (!contactDescription.trim()) {
+      setContactIsError(true);
+      setContactMessage("Please enter a description.");
+      return;
+    }
+
+    if (!lastName.trim() || !petSubID.trim()) {
+      setContactIsError(true);
+      setContactMessage(
+        "The logged-in member name or Subscription ID is unavailable."
+      );
+      return;
+    }
+
+    const memberFullName = `${firstName || ""} ${lastName || ""}`.trim();
+
+    const emailDescription = [
+      contactDescription.trim(),
+    ].join("\n");
+
+    try {
+      setContactSubmitting(true);
+
+      const response = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          memberLast: lastName.trim(),
+          subject: contactSubject,
+          description: emailDescription,
+          memberInsID: petSubID.trim(),
+        }),
+      });
+
+      console.log("Send-email response:", {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get("content-type"),
+      });
+
+      const responseText = await response.text();
+
+      console.log("Send-email response body:", responseText);
+
+      let responseData: any = null;
+
+      if (responseText) {
+        try {
+          responseData = JSON.parse(responseText);
+        } catch {
+          responseData = responseText;
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          getApiMessage(responseData) ||
+            `Unable to send the message. Status: ${response.status}`
+        );
+      }
+
+      setContactIsError(false);
+      setContactMessage(
+        getApiMessage(responseData) || "Your message was sent successfully."
+      );
+      setContactSubject("");
+      setContactDescription("");
+
+      window.setTimeout(() => {
+        setContactOpen(false);
+        setContactMessage("");
+      }, 2000);
+    } catch (error) {
+      console.error("Contact form submission error:", error);
+
+      setContactIsError(true);
+
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        setContactMessage(
+          "Unable to connect to the local send-email API. Verify that app/api/send-email/route.ts exists and check the npm run dev terminal for errors."
+        );
+      } else {
+        setContactMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to send the message. Please try again."
+        );
+      }
+    } finally {
+      setContactSubmitting(false);
+    }
+  }
+
   async function openStripePaymentMethodPortal() {
     setIsError(false);
 
@@ -967,21 +1099,13 @@ console.log(
             </button>
           )}
 
-          <a
+          <button
+            type="button"
             className="contact-button"
-            href={`mailto:d2csupport@petvantagerx.com?subject=${encodeURIComponent(
-              `PetVantageRx Support - ${partnerName || "Unknown Partner"}`
-            )}&body=${encodeURIComponent(
-              `Partner: ${partnerName || "Unknown Partner"}
-          Subscription ID: ${petSubID}
-
-          Please describe your issue below:
-
-          `
-            )}`}
+            onClick={openContactDialog}
           >
             📧 Contact Us
-          </a>
+          </button>
 
           <button
             type="button"
@@ -1160,6 +1284,126 @@ console.log(
             )}
 
          </section>
+        )}
+
+        {contactOpen && (
+          <div
+            style={contactOverlayStyle}
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                closeContactDialog();
+              }
+            }}
+          >
+            <div
+              style={contactDialogStyle}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="contact-dialog-title"
+            >
+              <button
+                type="button"
+                style={contactCloseButtonStyle}
+                onClick={closeContactDialog}
+                aria-label="Close Contact Us form"
+                disabled={contactSubmitting}
+              >
+                ×
+              </button>
+
+              <h2 id="contact-dialog-title" style={contactTitleStyle}>
+                Contact Us
+              </h2>
+
+              <div style={contactMemberInfoStyle}>
+                <div>
+                  <strong>Name:</strong>{" "}
+                  {`${firstName || ""} ${lastName || ""}`.trim() ||
+                    "Unavailable"}
+                </div>
+                <div>
+                  <strong>Member Subscription ID:</strong>{" "}
+                  {petSubID || "Unavailable"}
+                </div>
+              </div>
+
+              <form onSubmit={handleContactSubmit}>
+                <div style={contactFieldStyle}>
+                  <label htmlFor="contact-subject" style={contactLabelStyle}>
+                    Subject
+                  </label>
+                  <select
+                    id="contact-subject"
+                    value={contactSubject}
+                    onChange={(event) =>
+                      setContactSubject(event.target.value)
+                    }
+                    style={contactSelectStyle}
+                    disabled={contactSubmitting}
+                    required
+                  >
+                    <option value="">Select a subject</option>
+                    <option value="Account Question">Account Question</option>
+                    <option value="Billing Question">Billing Question</option>
+                    <option value="Medication Request Question">
+                      Medication Request Question
+                    </option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div style={contactFieldStyle}>
+                  <label
+                    htmlFor="contact-description"
+                    style={contactLabelStyle}
+                  >
+                    Description
+                  </label>
+                  <textarea
+                    id="contact-description"
+                    value={contactDescription}
+                    onChange={(event) =>
+                      setContactDescription(event.target.value)
+                    }
+                    placeholder="Please describe how we can help."
+                    rows={7}
+                    maxLength={5000}
+                    style={contactTextAreaStyle}
+                    disabled={contactSubmitting}
+                    required
+                  />
+                  <div style={contactCharacterCountStyle}>
+                    {contactDescription.length.toLocaleString()} / 5,000
+                  </div>
+                </div>
+
+                {contactMessage && (
+                  <div
+                    style={
+                      contactIsError
+                        ? contactErrorMessageStyle
+                        : contactSuccessMessageStyle
+                    }
+                    role={contactIsError ? "alert" : "status"}
+                  >
+                    {contactMessage}
+                  </div>
+                )}
+
+                <div style={contactActionsStyle}>
+                  <button
+                    type="submit"
+                    className="gold-button"
+                    disabled={contactSubmitting}
+                    style={contactSubmitButtonStyle}
+                  >
+                    {contactSubmitting ? "Sending..." : "Submit"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
 
         {historyOpen && (
@@ -1342,6 +1586,145 @@ console.log(
   );
 }
 
+const contactOverlayStyle: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 10000,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 18,
+  backgroundColor: "rgba(0, 0, 0, 0.55)",
+};
+
+const contactDialogStyle: React.CSSProperties = {
+  position: "relative",
+  width: "min(560px, 100%)",
+  maxHeight: "calc(100vh - 36px)",
+  overflowY: "auto",
+  padding: 28,
+  backgroundColor: "#ffffff",
+  borderRadius: 14,
+  boxShadow: "0 18px 55px rgba(0, 0, 0, 0.28)",
+  fontFamily: "Arial, Helvetica, sans-serif",
+};
+
+const contactCloseButtonStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 10,
+  right: 14,
+  width: 36,
+  height: 36,
+  padding: 0,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "transparent",
+  color: "#555555",
+  border: "none",
+  borderRadius: "50%",
+  fontSize: 30,
+  lineHeight: 1,
+  cursor: "pointer",
+};
+
+const contactTitleStyle: React.CSSProperties = {
+  margin: "0 40px 18px 0",
+  color: "#2f653b",
+  fontFamily: 'Georgia, "Times New Roman", serif',
+  fontSize: 27,
+};
+
+const contactMemberInfoStyle: React.CSSProperties = {
+  marginBottom: 20,
+  padding: "12px 14px",
+  backgroundColor: "#f3f7f3",
+  border: "1px solid #d7e4d8",
+  borderRadius: 8,
+  color: "#333333",
+  fontSize: 13,
+  lineHeight: 1.7,
+};
+
+const contactFieldStyle: React.CSSProperties = {
+  marginBottom: 18,
+};
+
+const contactLabelStyle: React.CSSProperties = {
+  display: "block",
+  marginBottom: 7,
+  color: "#333333",
+  fontSize: 14,
+  fontWeight: 700,
+};
+
+const contactSelectStyle: React.CSSProperties = {
+  width: "100%",
+  height: 42,
+  boxSizing: "border-box",
+  padding: "0 12px",
+  border: "1px solid #aeb8ae",
+  borderRadius: 8,
+  backgroundColor: "#ffffff",
+  color: "#222222",
+  fontFamily: "Arial, Helvetica, sans-serif",
+  fontSize: 15,
+};
+
+const contactTextAreaStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 145,
+  boxSizing: "border-box",
+  padding: "11px 12px",
+  border: "1px solid #aeb8ae",
+  borderRadius: 8,
+  backgroundColor: "#ffffff",
+  color: "#222222",
+  fontFamily: "Arial, Helvetica, sans-serif",
+  fontSize: 15,
+  lineHeight: 1.45,
+  resize: "vertical",
+};
+
+const contactCharacterCountStyle: React.CSSProperties = {
+  marginTop: 5,
+  color: "#777777",
+  fontSize: 11,
+  textAlign: "right",
+};
+
+const contactErrorMessageStyle: React.CSSProperties = {
+  margin: "0 0 16px",
+  padding: "10px 12px",
+  border: "1px solid #e5b9b9",
+  borderRadius: 7,
+  backgroundColor: "#fff0f0",
+  color: "#8b1d1d",
+  fontSize: 13,
+  lineHeight: 1.4,
+};
+
+const contactSuccessMessageStyle: React.CSSProperties = {
+  margin: "0 0 16px",
+  padding: "10px 12px",
+  border: "1px solid #b8d9be",
+  borderRadius: 7,
+  backgroundColor: "#edf8ef",
+  color: "#225d30",
+  fontSize: 13,
+  lineHeight: 1.4,
+};
+
+const contactActionsStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "flex-end",
+  marginTop: 8,
+};
+
+const contactSubmitButtonStyle: React.CSSProperties = {
+  minWidth: 110,
+};
+
 const navy = "#1B2A41";
 
 const logoutLinkStyle: React.CSSProperties = {
@@ -1353,4 +1736,4 @@ const logoutLinkStyle: React.CSSProperties = {
   textDecoration: "none",
   fontSize: 13,
   fontWeight: 700,
-}
+};
